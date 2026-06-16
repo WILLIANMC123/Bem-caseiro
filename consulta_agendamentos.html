@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <link rel="stylesheet" href="estilo.css">
-    <title>SisCristóvão - Consulta de Agendamentos</title>
+    <title>Bem Caseiro - Consultar Pedidos</title>
 </head>
 <body>
     <nav>
@@ -11,123 +11,61 @@
         <a href="clientes.html">Clientes</a>
         <a href="servicos.html">Serviços</a>
         <a href="agendamentos.html">Agendamentos</a>
-        <a href="consulta_agendamentos.html">Consulta Agendamentos</a>
+        <a href="consulta_agendamentos.html">Consulta</a>
     </nav>
 
     <header class="banner">
-        <h1>Histórico de Agendamentos</h1>
-        <p>Consulte as Ordens de Serviço abertas e alocações de equipes</p>
+        <img src="imagens/logo-bem-caseiro.png" alt="Bem Caseiro" style="height: 80px; width: auto; margin-bottom: 15px;">
+        <h1>Consulta de Pedidos</h1>
+        <p>Histórico de agendamentos e entregas</p>
     </header>
 
     <div class="container">
         <div class="card">
-            <h2>Agendamentos Registrados (Mestre)</h2>
-            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 15px;">
-                Clique em "Ver Detalhes" para examinar os serviços específicos alocados a cada horário.
-            </p>
+            <h2>Pedidos Realizados</h2>
+            <input type="text" id="busca" placeholder="Buscar por cliente ou data..." 
+                   style="margin-bottom: 15px;" onkeyup="filtrarTabela()">
+            
             <table>
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Data / Hora</th>
+                        <th>Data</th>
                         <th>Cliente</th>
-                        <th>Responsável</th>
-                        <th>Total</th>
-                        <th>Ação</th>
+                        <th>Serviços</th>
+                        <th>Valor Total</th>
+                        <th>Status</th>
                     </tr>
                 </thead>
-                <tbody id="lista-agendamentos-consulta">
-                    </tbody>
-            </table>
-        </div>
-
-        <div id="card-detalhes" class="card" style="margin-top: 25px; display: none; border-left: 6px solid var(--accent-red);">
-            <h2>Detalhes da Ordem de Serviço #<span id="num-agendamento"></span></h2>
-            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 15px;">
-                Serviços técnicos executados nesta reserva:
-            </p>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Serviço Técnico</th>
-                        <th>Tempo Estimado</th>
-                        <th>Preço (R$)</th>
-                    </tr>
-                </thead>
-                <tbody id="lista-servicos-detalhe">
-                    </tbody>
+                <tbody id="lista-agendamentos"></tbody>
             </table>
         </div>
     </div>
 
-    <script {="" }="">
-        // Executa automaticamente ao carregar a página para preencher a tabela Mestre
-        window.onload = function() {
-            fetch('/listar-agendamentos')
-                .then(res => res.json())
-                .then(agendamentos => {
-                    const corpoTabela = document.getElementById('lista-agendamentos-consulta');
-                    corpoTabela.innerHTML = "";
-                    
-                    agendamentos.forEach(a => {
-                        // Formatação amigável para a data vinda do datetime-local
-                        const dataFormatada = new Date(a.data).toLocaleString('pt-BR', {
-                            dateStyle: 'short',
-                            timeStyle: 'short'
-                        });
+    <footer class="rodape">
+        <p>&copy; 2026 Bem Caseiro - Pães e Delícias</p>
+    </footer>
 
-                        corpoTabela.innerHTML += `
-                            <tr>
-                                <td>${a.id}</td>
-                                <td>${dataFormatada}</td>
-                                <td><strong>${a.nome_cliente}</strong></td>
-                                <td>${a.responsavel}</td>
-                                <td>R$ ${a.total.toFixed(2)}</td>
-                                <td>
-                                    <button onclick="verDetalhes(${a.id})">Ver Detalhes</button>
-                                </td>
-                            </tr>`;
-                    });
-                })
-                .catch(err => console.error("Erro ao listar agendamentos:", err));
-        };
+    <script>
+        fetch('/listar-agendamentos')
+            .then(res => res.json())
+            .then(agendamentos => {
+                const corpo = document.getElementById('lista-agendamentos');
+                agendamentos.forEach(a => {
+                    corpo.innerHTML += `
+                        <tr>
+                            <td>${a.data}</td>
+                            <td><strong>${a.cliente}</strong></td>
+                            <td>${a.servicos}</td>
+                            <td>R$ ${a.total ? a.total.toFixed(2) : '0.00'}</td>
+                            <td><span style="color: green; font-weight: bold;">${a.status || 'Concluído'}</span></td>
+                        </tr>`;
+                });
+            });
 
-        // Função para carregar e exibir os Detalhes do agendamento clicado
-        function verDetalhes(idAgendamento) {
-            fetch(`/detalhes-agendamento/${idAgendamento}`)
-                .then(res => res.json())
-                .then(servicos => {
-                    // Torna o card visível e atualiza o número da O.S.
-                    document.getElementById('card-detalhes').style.display = 'block';
-                    document.getElementById('num-agendamento').innerText = idAgendamento;
-                    
-                    const corpoDetalhe = document.getElementById('lista-servicos-detalhe');
-                    corpoDetalhe.innerHTML = "";
-                    
-                    servicos.forEach(item => {
-                        corpoDetalhe.innerHTML += `
-                            <tr>
-                                <td><strong>${item.descricao}</strong></td>
-                                <td>${item.tempo_estimado}h</td>
-                                <td>R$ ${item.preco_cobrado.toFixed(2)}</td>
-                            </tr>`;
-                    });
-                    
-                    // Rola a tela suavemente até o card de detalhes para melhorar a usabilidade
-                    window.scrollTo({
-                        top: document.getElementById('card-detalhes').offsetTop - 20,
-                        behavior: 'smooth'
-                    });
-                })
-                .catch(err => console.error("Erro ao carregar detalhes:", err));
+        function filtrarTabela() {
+            // Função básica de filtro (pode ser melhorada)
+            console.log("Filtrando...");
         }
     </script>
 </body>
-
-<footer class="rodape">
-    <div class="container-rodape">
-        <p>&copy; 2026 SisCristóvão - Sistema de Controle de Serviços</p>
-        <p>Desenvolvido para fins didáticos - Alunos do São Cristóvão</p>
-    </div>
-</footer>
 </html>
