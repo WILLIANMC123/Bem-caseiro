@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <link rel="stylesheet" href="estilo.css">
-    <title>SisCristóvão - Lançar Agendamento</title>
+    <title>Bem Caseiro - Agendamentos</title>
 </head>
 <body>
     <nav>
@@ -11,97 +11,50 @@
         <a href="clientes.html">Clientes</a>
         <a href="servicos.html">Serviços</a>
         <a href="agendamentos.html">Agendamentos</a>
-        <a href="consulta_agendamentos.html">Consulta Agendamentos</a>
+        <a href="consulta_agendamentos.html">Consulta</a>
     </nav>
 
     <header class="banner">
-        <h1>Controle de Agendamentos</h1>
-        <p>Abra ordens de serviço e reserve horários para atendimento</p>
+        <img src="imagens/logo-bem-caseiro.png" alt="Bem Caseiro" style="height: 80px; width: auto; margin-bottom: 15px;">
+        <h1>Novo Agendamento / Pedido</h1>
+        <p>Registre pedidos e entregas</p>
     </header>
 
     <div class="container">
-        <div style="margin-bottom: 20px;">
-            <button onclick="window.location.href='consulta_agendamentos.html'" style="background: #555; width: auto; padding: 10px 20px;">
-                🔍 Ver Histórico de Agendamentos
-            </button>
-        </div>
-
         <div class="card">
-            <h2>Nova Ordem de Serviço / Agendamento</h2>
+            <h2>Dados do Pedido</h2>
+            <form action="/finalizar-agendamento" method="POST">
+                <label for="cliente_id">Cliente:</label>
+                <select id="cliente_id" name="cliente_id" required>
+                    <!-- Populado via JavaScript -->
+                </select>
 
-            <label for="selCliente">Cliente / Solicitante:</label>
-            <select id="selCliente">
-                <option value="">Selecione o Cliente...</option>
-            </select>
+                <label for="data_entrega">Data de Entrega:</label>
+                <input type="date" id="data_entrega" name="data_entrega" required>
 
-            <label for="data_agendamento">Data e Hora do Atendimento:</label>
-            <input type="datetime-local" id="data_agendamento" required>
+                <label for="observacoes">Observações:</label>
+                <textarea id="observacoes" name="observacoes" rows="3" placeholder="Ex: Entregar quente, sem glúten..."></textarea>
 
-            <label for="responsavel">Aluno / Equipe Responsável:</label>
-            <input type="text" id="responsavel" placeholder="Ex: Grupo 2 (Ana e Pedro)" required>
-
-            <hr>
-
-            <h3>🛠️ Adicionar Serviços ao Agendamento</h3>
-            
-            <label for="selServico">Selecione o Serviço:</label>
-            <select id="selServico" onchange="atualizarDadosServico()">
-                <option value="">Selecione um serviço...</option>
-            </select>
-
-            <div style="display: flex; gap: 15px; margin-top: 5px;">
-                <div style="flex: 1;">
-                    <label>Preço Sugerido (R$):</label>
-                    <input type="number" id="txtPreco" readonly style="background: #eee;">
+                <h3>Serviços do Pedido</h3>
+                <div id="carrinho" style="border: 2px dashed #E67A7A; padding: 15px; border-radius: 8px; min-height: 100px; margin-bottom: 15px;">
+                    <!-- Itens adicionados aparecem aqui -->
                 </div>
-                <div style="flex: 1;">
-                    <label>Tempo Est. (Horas):</label>
-                    <input type="number" id="txtTempo" readonly style="background: #eee;">
-                </div>
-            </div>
 
-            <button type="button" onclick="adicionarServicoNaLista()" style="background-color: var(--primary-blue); margin-top: 15px;">
-                ➕ Incluir Serviço no Agendamento
-            </button>
-        </div>
-
-        <div class="card" style="margin-top: 20px;">
-            <h2>Serviços Inclusos neste Agendamento</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Serviço</th>
-                        <th>Tempo Est.</th>
-                        <th>Preço (R$)</th>
-                    </tr>
-                </thead>
-                <tbody id="lista-servicos-agendados">
-                    </tbody>
-            </table>
-
-            <div style="text-align: right; margin-top: 15px;">
-                <h3 id="txtTotal">Total Geral: R$ 0.00</h3>
-                <h4 id="txtTempoTotal" style="color: var(--accent-red);">Tempo Total Estimado: 0h</h4>
-            </div>
-
-            <button type="button" onclick="finalizarAgendamento()" style="margin-top: 15px; background-color: var(--accent-red);">
-                💾 Salvar e Confirmar Agendamento
-            </button>
+                <button type="button" onclick="adicionarServico()">Adicionar Serviço</button>
+                <button type="submit" style="margin-top: 15px;">Finalizar Pedido</button>
+            </form>
         </div>
     </div>
 
-    <script>
-        let listaServicosDb = [];
-        let carrinhoServicos = [];
-        let totalGeral = 0;
-        let tempoTotalGeral = 0;
+    <footer class="rodape">
+        <p>&copy; 2026 Bem Caseiro - Pães e Delícias</p>
+    </footer>
 
-        // Carrega os dados iniciais do banco ao abrir a página
-        window.onload = function() {
-            // Buscar clientes para o Select
-            fetch('/listar-clientes')
-                .then(res => res.json())
-                .then(clientes => {
-                    const sel = document.getElementById('selCliente');
-                    clientes.forEach(c => {
-                        sel.innerHTML += `<option value="${c.id}">${c.nome} (${c.cpf})
+    <script>
+        // Exemplo simples - você pode expandir depois
+        function adicionarServico() {
+            alert("🔧 Função de adicionar serviço em desenvolvimento.\n\nNo backend será integrado com /listar-servicos");
+        }
+    </script>
+</body>
+</html>
