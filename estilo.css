@@ -2,18 +2,16 @@
    PALETA DE CORES - BEM CASEIRO
    ========================================================================== */
 :root {
-    --primary-brown: #8B4513;      /* Marrom principal (pão) */
-    --accent-pink: #E67A7A;        /* Rosa coral */
-    --accent-green: #4A7043;       /* Verde das folhas */
-    --bg-cream: #FFF8F0;           /* Fundo cremoso quente */
+    --primary-brown: #8B4513;
+    --accent-pink: #E67A7A;
+    --accent-green: #4A7043;
+    --bg-cream: #FFF8F0;
     --bg-white: #FFFFFF;
     --text-dark: #3C2F2F;
     --text-muted: #5C4A4A;
 }
 
-/* ==========================================================================
-   ESTRUTURA GERAL
-   ========================================================================== */
+/* ESTRUTURA GERAL */
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
@@ -31,9 +29,7 @@ body {
     flex: 1;
 }
 
-/* ==========================================================================
-   MENU DE NAVEGAÇÃO
-   ========================================================================== */
+/* MENU */
 nav {
     background-color: var(--primary-brown);
     padding: 1.1rem;
@@ -58,35 +54,30 @@ nav a:hover {
     color: white;
 }
 
-/* ==========================================================================
-   BANNER
-   ========================================================================== */
+/* BANNER */
 .banner {
     background: linear-gradient(135deg, var(--primary-brown) 0%, #A0522D 100%);
     color: white;
-    padding: 50px 20px;
+    padding: 40px 20px;
     text-align: center;
     box-shadow: 0 4px 12px rgba(139, 69, 19, 0.3);
     margin-bottom: 20px;
 }
 
 .banner h1 {
-    margin: 0;
-    font-size: 2.8rem;
-    font-weight: 800;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    margin: 10px 0 5px;
+    font-size: 2.6rem;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.4);
 }
 
 .banner p {
-    margin: 10px 0 0;
-    font-size: 1.25rem;
+    margin: 0;
+    font-size: 1.3rem;
     font-weight: bold;
     color: #FFF0E0;
 }
 
-/* ==========================================================================
-   CARDS
-   ========================================================================== */
+/* CARDS */
 .card {
     background: var(--bg-white);
     padding: 2rem;
@@ -100,9 +91,7 @@ nav a:hover {
     color: var(--primary-brown);
 }
 
-/* ==========================================================================
-   FORMULÁRIOS E BOTÕES
-   ========================================================================== */
+/* FORMULÁRIOS E BOTÕES */
 input, select, button {
     width: 100%;
     padding: 0.85rem;
@@ -135,18 +124,6 @@ button:hover {
     transform: translateY(-2px);
 }
 
-/* Botões secundários (ex: azul antigo vira marrom) */
-button[style*="var(--primary-blue)"] {
-    background-color: var(--primary-brown) !important;
-}
-
-button[style*="var(--primary-blue)"]:hover {
-    background-color: #6B3A10 !important;
-}
-
-/* ==========================================================================
-   TABELAS
-   ========================================================================== */
 table {
     width: 100%;
     border-collapse: collapse;
@@ -158,9 +135,6 @@ thead tr {
     color: white;
 }
 
-/* ==========================================================================
-   RODAPÉ
-   ========================================================================== */
 .rodape {
     background-color: #3C2F2F;
     color: #E8D5C0;
