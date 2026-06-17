@@ -2,144 +2,212 @@
    PALETA DE CORES - BEM CASEIRO
    ========================================================================== */
 :root {
-    --primary-brown: #8B4513;
-    --accent-pink: #E67A7A;
-    --accent-green: #4A7043;
-    --bg-cream: #FFF8F0;
+    --primary-blue: #5EB8FF;       /* Azul bebê principal */
+    --primary-dark: #2C7DA7;       /* Azul mais forte */
+    --accent-pink: #FF6B9D;        /* Rosa suave (mantido) */
+    --accent-green: #4ECDC4;      /* Verde menta */
+    --bg-light: #F0F8FF;           /* Fundo azul muito claro */
     --bg-white: #FFFFFF;
-    --text-dark: #3C2F2F;
-    --text-muted: #5C4A4A;
+    --text-dark: #1E2937;
+    --text-muted: #475569;
+    --shadow: rgba(94, 184, 255, 0.2);
 }
 
-/* ESTRUTURA GERAL */
+/* ==========================================================================
+   ESTRUTURA GERAL
+   ========================================================================== */
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Segoe UI', system-ui, sans-serif;
     margin: 0;
-    background-color: var(--bg-cream);
+    background: linear-gradient(135deg, #F0F8FF 0%, #E0F0FF 100%);
     color: var(--text-dark);
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    line-height: 1.6;
 }
 
 .container {
-    padding: 2rem 1rem;
-    max-width: 900px;
+    padding: 2.5rem 1.5rem;
+    max-width: 1100px;
     margin: 0 auto;
     flex: 1;
 }
 
-/* MENU */
+/* ==========================================================================
+   MENU DE NAVEGAÇÃO
+   ========================================================================== */
 nav {
-    background-color: var(--primary-brown);
-    padding: 1.1rem;
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary-blue));
+    padding: 1.2rem;
     display: flex;
-    justify-content: space-around;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-    border-bottom: 4px solid var(--accent-pink);
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    box-shadow: 0 6px 15px var(--shadow);
+    position: sticky;
+    top: 0;
+    z-index: 100;
 }
 
 nav a {
     color: white;
     text-decoration: none;
-    font-weight: bold;
-    font-size: 1.05rem;
-    padding: 5px 12px;
-    border-radius: 6px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    padding: 10px 20px;
+    border-radius: 50px;
     transition: all 0.3s ease;
 }
 
 nav a:hover {
-    background-color: var(--accent-pink);
-    color: white;
+    background: rgba(255,255,255,0.25);
+    transform: translateY(-3px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
 }
 
-/* BANNER */
+/* ==========================================================================
+   BANNER
+   ========================================================================== */
 .banner {
-    background: linear-gradient(135deg, var(--primary-brown) 0%, #A0522D 100%);
+    background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-dark) 100%);
     color: white;
-    padding: 40px 20px;
+    padding: 70px 20px;
     text-align: center;
-    box-shadow: 0 4px 12px rgba(139, 69, 19, 0.3);
-    margin-bottom: 20px;
+    box-shadow: 0 8px 25px var(--shadow);
+    margin-bottom: 30px;
+    position: relative;
+    overflow: hidden;
+}
+
+.banner::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 400px;
+    height: 400px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 50%;
+    z-index: 0;
 }
 
 .banner h1 {
-    margin: 10px 0 5px;
-    font-size: 2.6rem;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.4);
+    margin: 0;
+    font-size: 3.2rem;
+    font-weight: 800;
+    text-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    position: relative;
+    z-index: 1;
 }
 
 .banner p {
-    margin: 0;
-    font-size: 1.3rem;
-    font-weight: bold;
-    color: #FFF0E0;
+    margin: 15px 0 0;
+    font-size: 1.35rem;
+    opacity: 0.95;
+    position: relative;
+    z-index: 1;
 }
 
-/* CARDS */
+/* ==========================================================================
+   CARDS
+   ========================================================================== */
 .card {
     background: var(--bg-white);
-    padding: 2rem;
-    border-radius: 12px;
-    box-shadow: 0 6px 12px rgba(139, 69, 19, 0.1);
-    border-left: 6px solid var(--primary-brown);
-    margin-bottom: 25px;
+    padding: 2.2rem;
+    border-radius: 20px;
+    box-shadow: 0 10px 25px var(--shadow);
+    border-left: 7px solid var(--primary-blue);
+    margin-bottom: 30px;
+    transition: transform 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-8px);
 }
 
 .card h1, .card h2, .card h3 {
-    color: var(--primary-brown);
+    color: var(--primary-dark);
+    margin-top: 0;
 }
 
-/* FORMULÁRIOS E BOTÕES */
+/* ==========================================================================
+   FORMULÁRIOS E BOTÕES
+   ========================================================================== */
 input, select, button {
     width: 100%;
-    padding: 0.85rem;
-    margin: 0.6rem 0;
-    border: 2px solid #E8D5C0;
-    border-radius: 8px;
+    padding: 14px;
+    margin: 10px 0;
+    border: 2px solid #E0F0FF;
+    border-radius: 12px;
     box-sizing: border-box;
-    font-size: 1rem;
+    font-size: 1.05rem;
+    transition: all 0.3s ease;
 }
 
 input:focus, select:focus {
     outline: none;
-    border-color: var(--primary-brown);
-    box-shadow: 0 0 0 3px rgba(139, 69, 19, 0.15);
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 4px rgba(94, 184, 255, 0.25);
 }
 
 button, button[type="submit"] {
-    background-color: var(--accent-pink);
+    background: linear-gradient(135deg, var(--primary-blue), #3B9EFF);
     color: white;
     font-weight: bold;
     border: none;
     cursor: pointer;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    box-shadow: 0 4px 8px rgba(230, 122, 122, 0.3);
+    letter-spacing: 0.8px;
+    box-shadow: 0 6px 15px var(--shadow);
+    transition: all 0.3s ease;
 }
 
 button:hover {
-    background-color: #D15F5F;
-    transform: translateY(-2px);
+    background: linear-gradient(135deg, #3B9EFF, var(--primary-dark));
+    transform: translateY(-4px);
+    box-shadow: 0 10px 20px rgba(94, 184, 255, 0.4);
 }
 
+/* ==========================================================================
+   TABELAS
+   ========================================================================== */
 table {
     width: 100%;
     border-collapse: collapse;
-    background-color: var(--bg-white);
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
 }
 
 thead tr {
-    background-color: var(--primary-brown);
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary-blue));
     color: white;
 }
 
+th, td {
+    padding: 14px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+tbody tr:hover {
+    background-color: #F0FAFF;
+}
+
+/* ==========================================================================
+   RODAPÉ
+   ========================================================================== */
 .rodape {
-    background-color: #3C2F2F;
-    color: #E8D5C0;
+    background: var(--primary-dark);
+    color: #E0F0FF;
     text-align: center;
-    padding: 25px 0;
-    margin-top: 40px;
-    border-top: 4px solid var(--accent-pink);
+    padding: 30px 0;
+    margin-top: auto;
+    border-top: 5px solid var(--accent-pink);
+}
+
+.rodape p {
+    margin: 5px 0;
 }
