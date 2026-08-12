@@ -2,8 +2,49 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="estilo.css">
     <title>Bem Caseiro - Agendamentos</title>
+    <style>
+        .item-carrinho {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            border-bottom: 1px solid #eee;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .item-carrinho:last-child { border-bottom: none; }
+        .resumo-pedido {
+            margin-top: 16px;
+            padding: 14px;
+            background: #F8F4EB;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+        .btn-remover {
+            background: #e74c3c !important;
+            padding: 8px 14px !important;
+            font-size: 0.9rem !important;
+            box-shadow: none !important;
+        }
+        .btn-remover:hover {
+            background: #c0392b !important;
+            transform: none !important;
+        }
+        #select-servico {
+            margin-bottom: 8px;
+        }
+        .msg-feedback {
+            margin-top: 12px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            display: none;
+        }
+        .msg-sucesso { background: #d4edda; color: #155724; }
+        .msg-erro { background: #f8d7da; color: #721c24; }
+    </style>
 </head>
 <body>
     <nav>
@@ -33,15 +74,29 @@
                 <input type="date" id="data_entrega" name="data_entrega" required>
 
                 <label for="responsavel">Responsável:</label>
-                <input type="text" id="responsavel" name="responsavel" placeholder="Nome de quem está atendendo" required>
+                <input type="text" id="responsavel" name="responsavel" placeholder="Nome de quem está atendendo" required maxlength="80">
 
                 <h3>Serviços do Pedido</h3>
-                <div id="carrinho" style="border: 2px dashed var(--rosa-bebe); padding: 15px; border-radius: 12px; min-height: 120px; margin-bottom: 15px; background: #fff;">
-                    <!-- Serviços adicionados aparecerão aqui -->
+                <label for="select-servico">Escolha um serviço:</label>
+                <select id="select-servico">
+                    <option value="">Carregando serviços...</option>
+                </select>
+                <button type="button" id="btn-add-servico" style="background: linear-gradient(135deg, var(--azul-bebe), var(--azul-escuro)); margin-bottom: 12px;">
+                    + Adicionar Serviço
+                </button>
+
+                <div id="carrinho" style="border: 2px dashed var(--rosa-bebe); padding: 15px; border-radius: 12px; min-height: 80px; margin-bottom: 15px; background: #fff;">
+                    <p id="carrinho-vazio" style="color: var(--texto-claro); margin: 0; text-align: center;">Nenhum serviço adicionado ainda.</p>
+                    <div id="lista-carrinho"></div>
                 </div>
 
-                <button type="button" onclick="adicionarServico()" style="background: var(--azul-bebe);">+ Adicionar Serviço</button>
-                <button type="submit" style="margin-top: 15px; width: auto; padding: 14px 30px;">Finalizar Pedido</button>
+                <div class="resumo-pedido" id="resumo">
+                    Total: R$ 0,00 &nbsp;|&nbsp; Tempo estimado: 0 min
+                </div>
+
+                <div id="feedback" class="msg-feedback"></div>
+
+                <button type="submit" id="btn-finalizar" style="margin-top: 15px; width: 100%;">Finalizar Pedido</button>
             </form>
         </div>
     </div>
@@ -51,42 +106,191 @@
     </footer>
 
     <script>
-        // ===================== CARREGAR CLIENTES =====================
+        let clientes = [];
+        let servicos = [];
+        let carrinho = [];
+
+        function escapeHtml(text) {
+            if (text == null) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatarPreco(valor) {
+            return Number(valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function atualizarResumo() {
+            const total = carrinho.reduce((s, i) => s + Number(i.preco), 0);
+            const tempo = carrinho.reduce((s, i) => s + Number(i.tempo_estimado), 0);
+            document.getElementById('resumo').innerHTML =
+                `Total: <strong>R$ ${formatarPreco(total)}</strong> &nbsp;|&nbsp; Tempo estimado: <strong>${tempo} min</strong>`;
+        }
+
+        function renderCarrinho() {
+            const lista = document.getElementById('lista-carrinho');
+            const vazio = document.getElementById('carrinho-vazio');
+
+            if (carrinho.length === 0) {
+                vazio.style.display = 'block';
+                lista.innerHTML = '';
+            } else {
+                vazio.style.display = 'none';
+                lista.innerHTML = carrinho.map((item, idx) => `
+                    <div class="item-carrinho">
+                        <div>
+                            <strong>${escapeHtml(item.descricao)}</strong><br>
+                            <small>R$ ${formatarPreco(item.preco)} · ${item.tempo_estimado} min</small>
+                        </div>
+                        <button type="button" class="btn-remover" data-idx="${idx}">Remover</button>
+                    </div>
+                `).join('');
+
+                lista.querySelectorAll('.btn-remover').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        carrinho.splice(Number(btn.dataset.idx), 1);
+                        renderCarrinho();
+                        atualizarResumo();
+                    });
+                });
+            }
+            atualizarResumo();
+        }
+
         async function carregarClientes() {
             try {
-                const response = await fetch('/listar-clientes');
-                const clientes = await response.json();
-                
+                const res = await fetch('/listar-clientes');
+                clientes = await res.json();
                 const select = document.getElementById('cliente_id');
                 select.innerHTML = '<option value="">Selecione um cliente...</option>';
-                
-                clientes.forEach(cliente => {
-                    const option = document.createElement('option');
-                    option.value = cliente.id;
-                    option.textContent = `${cliente.nome} (${cliente.telefone})`;
-                    select.appendChild(option);
+                clientes.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.id;
+                    opt.textContent = `${c.nome} (${c.telefone})`;
+                    select.appendChild(opt);
                 });
-            } catch (error) {
-                console.error('Erro ao carregar clientes:', error);
+                if (clientes.length === 0) {
+                    select.innerHTML = '<option value="">Nenhum cliente cadastrado — cadastre em Clientes</option>';
+                }
+            } catch (e) {
                 document.getElementById('cliente_id').innerHTML = '<option value="">Erro ao carregar clientes</option>';
             }
         }
 
-        // ===================== FUNÇÃO PARA ADICIONAR SERVIÇO (básica) =====================
-        function adicionarServico() {
-            alert("🔧 Função de adicionar serviços em desenvolvimento.\n\nEm breve você poderá escolher serviços salvos.");
-            // Futuramente aqui vai abrir um modal com serviços
+        async function carregarServicos() {
+            try {
+                const res = await fetch('/listar-servicos');
+                servicos = await res.json();
+                const select = document.getElementById('select-servico');
+                select.innerHTML = '<option value="">Selecione um serviço...</option>';
+                servicos.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = `${s.descricao} — R$ ${formatarPreco(s.preco)} (${s.tempo_estimado} min)`;
+                    select.appendChild(opt);
+                });
+                if (servicos.length === 0) {
+                    select.innerHTML = '<option value="">Nenhum serviço cadastrado — cadastre em Serviços</option>';
+                }
+            } catch (e) {
+                document.getElementById('select-servico').innerHTML = '<option value="">Erro ao carregar serviços</option>';
+            }
         }
 
-        // ===================== ENVIAR FORMULÁRIO =====================
-        document.getElementById('form-agendamento').addEventListener('submit', function(e) {
-            e.preventDefault();
-            alert("✅ Pedido finalizado com sucesso! (Integração completa em breve)");
-            // Aqui virá a lógica completa de envio para /finalizar-agendamento
+        document.getElementById('btn-add-servico').addEventListener('click', () => {
+            const select = document.getElementById('select-servico');
+            const id = select.value;
+            if (!id) {
+                alert('Selecione um serviço para adicionar.');
+                return;
+            }
+            const servico = servicos.find(s => String(s.id) === String(id));
+            if (!servico) return;
+
+            carrinho.push({
+                id: servico.id,
+                descricao: servico.descricao,
+                preco: servico.preco,
+                tempo_estimado: servico.tempo_estimado
+            });
+            renderCarrinho();
+            select.value = '';
         });
 
-        // Carrega os clientes assim que a página abrir
-        window.onload = carregarClientes;
+        document.getElementById('form-agendamento').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const feedback = document.getElementById('feedback');
+            const btn = document.getElementById('btn-finalizar');
+
+            const cliente_id = document.getElementById('cliente_id').value;
+            const data = document.getElementById('data_entrega').value;
+            const responsavel = document.getElementById('responsavel').value.trim();
+
+            if (!cliente_id || !data || !responsavel) {
+                feedback.className = 'msg-feedback msg-erro';
+                feedback.style.display = 'block';
+                feedback.textContent = 'Preencha cliente, data e responsável.';
+                return;
+            }
+
+            if (carrinho.length === 0) {
+                feedback.className = 'msg-feedback msg-erro';
+                feedback.style.display = 'block';
+                feedback.textContent = 'Adicione pelo menos um serviço ao pedido.';
+                return;
+            }
+
+            const total = carrinho.reduce((s, i) => s + Number(i.preco), 0);
+            const tempo_total = carrinho.reduce((s, i) => s + Number(i.tempo_estimado), 0);
+
+            const payload = {
+                cliente_id: Number(cliente_id),
+                data,
+                responsavel,
+                total,
+                tempo_total,
+                servicos: carrinho.map(i => ({ id: i.id, preco: i.preco }))
+            };
+
+            btn.disabled = true;
+            btn.textContent = 'Salvando...';
+
+            try {
+                const res = await fetch('/finalizar-agendamento', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const dataRes = await res.json();
+
+                if (dataRes.success) {
+                    feedback.className = 'msg-feedback msg-sucesso';
+                    feedback.style.display = 'block';
+                    feedback.textContent = 'Pedido finalizado com sucesso! Redirecionando...';
+                    setTimeout(() => {
+                        window.location.href = 'consulta_agendamentos.html';
+                    }, 1200);
+                } else {
+                    throw new Error(dataRes.error || 'Erro ao salvar');
+                }
+            } catch (err) {
+                feedback.className = 'msg-feedback msg-erro';
+                feedback.style.display = 'block';
+                feedback.textContent = err.message || 'Erro ao finalizar pedido. Tente novamente.';
+                btn.disabled = false;
+                btn.textContent = 'Finalizar Pedido';
+            }
+        });
+
+        const hoje = new Date().toISOString().split('T')[0];
+        document.getElementById('data_entrega').setAttribute('min', hoje);
+
+        window.onload = () => {
+            carregarClientes();
+            carregarServicos();
+            renderCarrinho();
+        };
     </script>
 </body>
 </html>
