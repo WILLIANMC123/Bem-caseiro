@@ -2,6 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="estilo.css">
     <title>Bem Caseiro - Clientes</title>
 </head>
@@ -25,14 +26,14 @@
             <h2>Novo Cliente</h2>
             <form action="/salvar-cliente" method="POST">
                 <label for="nome">Nome Completo:</label>
-                <input type="text" id="nome" name="nome" placeholder="Ex: Maria Silva" required>
-                
+                <input type="text" id="nome" name="nome" placeholder="Ex: Maria Silva" required maxlength="120">
+
                 <label for="cpf">CPF / CNPJ:</label>
-                <input type="text" id="cpf" name="cpf" placeholder="000.000.000-00" required>
-                
+                <input type="text" id="cpf" name="cpf" placeholder="000.000.000-00" required maxlength="20">
+
                 <label for="telefone">Telefone / WhatsApp:</label>
-                <input type="tel" id="telefone" name="telefone" placeholder="(00) 99999-9999" required>
-                
+                <input type="tel" id="telefone" name="telefone" placeholder="(00) 99999-9999" required maxlength="20">
+
                 <button type="submit">Salvar Cliente</button>
             </form>
         </div>
@@ -47,7 +48,9 @@
                         <th>Telefone</th>
                     </tr>
                 </thead>
-                <tbody id="lista-clientes"></tbody>
+                <tbody id="lista-clientes">
+                    <tr><td colspan="3" style="text-align:center; color: var(--texto-claro);">Carregando...</td></tr>
+                </tbody>
             </table>
         </div>
     </div>
@@ -57,13 +60,35 @@
     </footer>
 
     <script>
+        function escapeHtml(text) {
+            if (text == null) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
         fetch('/listar-clientes')
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) throw new Error('Erro ao carregar');
+                return res.json();
+            })
             .then(clientes => {
                 const corpo = document.getElementById('lista-clientes');
-                clientes.forEach(c => {
-                    corpo.innerHTML += `<tr><td><strong>${c.nome}</strong></td><td>${c.cpf}</td><td>${c.telefone}</td></tr>`;
-                });
+                if (!clientes || clientes.length === 0) {
+                    corpo.innerHTML = '<tr><td colspan="3" style="text-align:center; color: var(--texto-claro);">Nenhum cliente cadastrado ainda.</td></tr>';
+                    return;
+                }
+                corpo.innerHTML = clientes.map(c => `
+                    <tr>
+                        <td><strong>${escapeHtml(c.nome)}</strong></td>
+                        <td>${escapeHtml(c.cpf)}</td>
+                        <td>${escapeHtml(c.telefone)}</td>
+                    </tr>
+                `).join('');
+            })
+            .catch(() => {
+                document.getElementById('lista-clientes').innerHTML =
+                    '<tr><td colspan="3" style="text-align:center; color:#c0392b;">Erro ao carregar clientes. Verifique se o servidor está rodando.</td></tr>';
             });
     </script>
 </body>
