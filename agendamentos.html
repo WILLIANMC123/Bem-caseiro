@@ -39,8 +39,8 @@
         .msg-feedback {
             margin-top: 12px;
             padding: 12px 16px;
-            border-radius: 12px;
             display: none;
+            border-radius: 12px;
         }
         .msg-sucesso { background: #d4edda; color: #155724; }
         .msg-erro { background: #f8d7da; color: #721c24; }
@@ -52,7 +52,7 @@
         <a href="clientes.html">Clientes</a>
         <a href="servicos.html">Serviços</a>
         <a href="agendamentos.html">Agendamentos</a>
-        <a href="consulta_agendamentos.html">Consulta</a>
+        <a href="login.html">Consulta</a>
     </nav>
 
     <header class="banner">
@@ -269,7 +269,7 @@
                     feedback.style.display = 'block';
                     feedback.textContent = 'Pedido finalizado com sucesso! Redirecionando...';
                     setTimeout(() => {
-                        window.location.href = 'consulta_agendamentos.html';
+                        window.location.href = 'login.html';
                     }, 1200);
                 } else {
                     throw new Error(dataRes.error || 'Erro ao salvar');
