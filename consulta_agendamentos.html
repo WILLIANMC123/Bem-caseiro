@@ -19,12 +19,26 @@
         .btn-detalhes:hover {
             transform: none !important;
         }
+        .btn-sair {
+            background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
+            padding: 8px 16px !important;
+            font-size: 0.95rem !important;
+            box-shadow: none !important;
+        }
         .lista-itens {
             margin: 0;
             padding-left: 18px;
         }
         #busca {
             margin-bottom: 15px;
+        }
+        .topo-consulta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 8px;
         }
     </style>
 </head>
@@ -34,7 +48,7 @@
         <a href="clientes.html">Clientes</a>
         <a href="servicos.html">Serviços</a>
         <a href="agendamentos.html">Agendamentos</a>
-        <a href="consulta_agendamentos.html">Consulta</a>
+        <a href="login.html">Consulta</a>
     </nav>
 
     <header class="banner">
@@ -45,7 +59,10 @@
 
     <div class="container">
         <div class="card">
-            <h2>Pedidos Realizados</h2>
+            <div class="topo-consulta">
+                <h2 style="margin: 0;">Pedidos Realizados</h2>
+                <button type="button" class="btn-sair" id="btn-sair">Sair</button>
+            </div>
             <input type="text" id="busca" placeholder="Buscar por cliente, data ou responsável..." oninput="filtrarTabela()">
 
             <table>
@@ -60,7 +77,7 @@
                     </tr>
                 </thead>
                 <tbody id="lista-agendamentos">
-                    <tr><td colspan="6" style="text-align:center; color: var(--texto-claro);">Carregando...</td></tr>
+                    <tr><td colspan="6" style="text-align:center; color: var(--texto-claro);">Verificando acesso...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -71,7 +88,22 @@
     </footer>
 
     <script>
+        const TOKEN_KEY = 'bem_caseiro_auth_token';
         let agendamentos = [];
+
+        function getToken() {
+            return sessionStorage.getItem(TOKEN_KEY);
+        }
+
+        function authHeaders() {
+            const token = getToken();
+            return token ? { 'Authorization': 'Bearer ' + token } : {};
+        }
+
+        function irParaLogin() {
+            sessionStorage.removeItem(TOKEN_KEY);
+            window.location.href = 'login.html';
+        }
 
         function escapeHtml(text) {
             if (text == null) return '';
@@ -132,7 +164,8 @@
             linha.querySelector('td').innerHTML = 'Carregando itens...';
 
             try {
-                const res = await fetch('/detalhes-agendamento/' + id);
+                const res = await fetch('/detalhes-agendamento/' + id, { headers: authHeaders() });
+                if (res.status === 401) return irParaLogin();
                 const itens = await res.json();
                 if (!itens || itens.length === 0) {
                     linha.querySelector('td').innerHTML = '<em>Nenhum item encontrado neste pedido.</em>';
@@ -170,19 +203,36 @@
             renderTabela(filtrados);
         }
 
-        fetch('/listar-agendamentos')
-            .then(res => {
+        document.getElementById('btn-sair').addEventListener('click', irParaLogin);
+
+        (async function iniciar() {
+            const token = getToken();
+            if (!token) {
+                irParaLogin();
+                return;
+            }
+
+            try {
+                const check = await fetch('/verificar-auth', { headers: authHeaders() });
+                const authData = await check.json();
+                if (!authData.autenticado) {
+                    irParaLogin();
+                    return;
+                }
+
+                const res = await fetch('/listar-agendamentos', { headers: authHeaders() });
+                if (res.status === 401) {
+                    irParaLogin();
+                    return;
+                }
                 if (!res.ok) throw new Error('Erro');
-                return res.json();
-            })
-            .then(dados => {
-                agendamentos = dados || [];
+                agendamentos = await res.json() || [];
                 renderTabela(agendamentos);
-            })
-            .catch(() => {
+            } catch (e) {
                 document.getElementById('lista-agendamentos').innerHTML =
                     '<tr><td colspan="6" style="text-align:center; color:#c0392b;">Erro ao carregar pedidos. Verifique se o servidor está rodando.</td></tr>';
-            });
+            }
+        })();
     </script>
 </body>
 </html>
