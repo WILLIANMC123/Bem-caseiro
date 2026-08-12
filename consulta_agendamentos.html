@@ -2,8 +2,31 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="estilo.css">
     <title>Bem Caseiro - Consultar Pedidos</title>
+    <style>
+        .detalhes-linha td {
+            background: #F8F4EB;
+            font-size: 0.95rem;
+        }
+        .btn-detalhes {
+            background: linear-gradient(135deg, var(--azul-bebe), var(--azul-escuro)) !important;
+            padding: 8px 14px !important;
+            font-size: 0.9rem !important;
+            box-shadow: none !important;
+        }
+        .btn-detalhes:hover {
+            transform: none !important;
+        }
+        .lista-itens {
+            margin: 0;
+            padding-left: 18px;
+        }
+        #busca {
+            margin-bottom: 15px;
+        }
+    </style>
 </head>
 <body>
     <nav>
@@ -23,20 +46,22 @@
     <div class="container">
         <div class="card">
             <h2>Pedidos Realizados</h2>
-            <input type="text" id="busca" placeholder="Buscar por cliente ou data..." 
-                   style="margin-bottom: 15px;" onkeyup="filtrarTabela()">
-            
+            <input type="text" id="busca" placeholder="Buscar por cliente, data ou responsável..." oninput="filtrarTabela()">
+
             <table>
                 <thead>
                     <tr>
                         <th>Data</th>
                         <th>Cliente</th>
-                        <th>Serviços</th>
+                        <th>Responsável</th>
                         <th>Valor Total</th>
-                        <th>Status</th>
+                        <th>Tempo</th>
+                        <th></th>
                     </tr>
                 </thead>
-                <tbody id="lista-agendamentos"></tbody>
+                <tbody id="lista-agendamentos">
+                    <tr><td colspan="6" style="text-align:center; color: var(--texto-claro);">Carregando...</td></tr>
+                </tbody>
             </table>
         </div>
     </div>
@@ -46,26 +71,118 @@
     </footer>
 
     <script>
-        fetch('/listar-agendamentos')
-            .then(res => res.json())
-            .then(agendamentos => {
-                const corpo = document.getElementById('lista-agendamentos');
-                agendamentos.forEach(a => {
-                    corpo.innerHTML += `
-                        <tr>
-                            <td>${a.data}</td>
-                            <td><strong>${a.cliente}</strong></td>
-                            <td>${a.servicos}</td>
-                            <td>R$ ${a.total ? a.total.toFixed(2) : '0.00'}</td>
-                            <td><span style="color: green; font-weight: bold;">${a.status || 'Concluído'}</span></td>
-                        </tr>`;
-                });
+        let agendamentos = [];
+
+        function escapeHtml(text) {
+            if (text == null) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatarPreco(valor) {
+            return Number(valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function formatarData(dataISO) {
+            if (!dataISO) return '-';
+            const partes = dataISO.split('-');
+            if (partes.length === 3) return `${partes[2]}/${partes[1]}/${partes[0]}`;
+            return dataISO;
+        }
+
+        function renderTabela(lista) {
+            const corpo = document.getElementById('lista-agendamentos');
+            if (!lista || lista.length === 0) {
+                corpo.innerHTML = '<tr><td colspan="6" style="text-align:center; color: var(--texto-claro);">Nenhum pedido encontrado.</td></tr>';
+                return;
+            }
+
+            corpo.innerHTML = lista.map(a => `
+                <tr data-id="${a.id}">
+                    <td>${escapeHtml(formatarData(a.data))}</td>
+                    <td><strong>${escapeHtml(a.nome_cliente)}</strong></td>
+                    <td>${escapeHtml(a.responsavel)}</td>
+                    <td>R$ ${formatarPreco(a.total)}</td>
+                    <td>${a.tempo_total || 0} min</td>
+                    <td><button type="button" class="btn-detalhes" data-id="${a.id}">Detalhes</button></td>
+                </tr>
+                <tr class="detalhes-linha" id="detalhe-${a.id}" style="display:none;">
+                    <td colspan="6">Carregando itens...</td>
+                </tr>
+            `).join('');
+
+            corpo.querySelectorAll('.btn-detalhes').forEach(btn => {
+                btn.addEventListener('click', () => toggleDetalhes(btn.dataset.id, btn));
             });
+        }
+
+        async function toggleDetalhes(id, btn) {
+            const linha = document.getElementById('detalhe-' + id);
+            if (!linha) return;
+
+            if (linha.style.display === 'table-row') {
+                linha.style.display = 'none';
+                btn.textContent = 'Detalhes';
+                return;
+            }
+
+            linha.style.display = 'table-row';
+            btn.textContent = 'Ocultar';
+            linha.querySelector('td').innerHTML = 'Carregando itens...';
+
+            try {
+                const res = await fetch('/detalhes-agendamento/' + id);
+                const itens = await res.json();
+                if (!itens || itens.length === 0) {
+                    linha.querySelector('td').innerHTML = '<em>Nenhum item encontrado neste pedido.</em>';
+                    return;
+                }
+                const html = `
+                    <strong>Itens do pedido:</strong>
+                    <ul class="lista-itens">
+                        ${itens.map(i => `
+                            <li>${escapeHtml(i.descricao)} — R$ ${formatarPreco(i.preco_cobrado)} (${i.tempo_estimado} min)</li>
+                        `).join('')}
+                    </ul>
+                `;
+                linha.querySelector('td').innerHTML = html;
+            } catch (e) {
+                linha.querySelector('td').innerHTML = '<span style="color:#c0392b;">Erro ao carregar detalhes.</span>';
+            }
+        }
 
         function filtrarTabela() {
-            // Função básica de filtro (pode ser melhorada)
-            console.log("Filtrando...");
+            const termo = document.getElementById('busca').value.toLowerCase().trim();
+            if (!termo) {
+                renderTabela(agendamentos);
+                return;
+            }
+            const filtrados = agendamentos.filter(a => {
+                const dataFmt = formatarData(a.data).toLowerCase();
+                return (
+                    (a.nome_cliente || '').toLowerCase().includes(termo) ||
+                    (a.responsavel || '').toLowerCase().includes(termo) ||
+                    (a.data || '').toLowerCase().includes(termo) ||
+                    dataFmt.includes(termo)
+                );
+            });
+            renderTabela(filtrados);
         }
+
+        fetch('/listar-agendamentos')
+            .then(res => {
+                if (!res.ok) throw new Error('Erro');
+                return res.json();
+            })
+            .then(dados => {
+                agendamentos = dados || [];
+                renderTabela(agendamentos);
+            })
+            .catch(() => {
+                document.getElementById('lista-agendamentos').innerHTML =
+                    '<tr><td colspan="6" style="text-align:center; color:#c0392b;">Erro ao carregar pedidos. Verifique se o servidor está rodando.</td></tr>';
+            });
     </script>
 </body>
 </html>
