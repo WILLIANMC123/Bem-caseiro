@@ -13,12 +13,7 @@
     --sombra: rgba(129, 207, 255, 0.25);
 }
 
-/* ==========================================================================
-   ESTRUTURA GERAL
-   ========================================================================== */
-* {
-    box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
     font-family: 'Segoe UI', system-ui, sans-serif;
@@ -38,9 +33,6 @@ body {
     width: 100%;
 }
 
-/* ==========================================================================
-   NAVEGAÇÃO
-   ========================================================================== */
 nav {
     background: linear-gradient(135deg, var(--azul-escuro), var(--azul-bebe));
     padding: 1.1rem 0;
@@ -68,9 +60,6 @@ nav a:hover {
     transform: translateY(-4px);
 }
 
-/* ==========================================================================
-   BANNER
-   ========================================================================== */
 .banner {
     background: linear-gradient(135deg, var(--azul-bebe), var(--azul-escuro));
     color: white;
@@ -94,9 +83,6 @@ nav a:hover {
     opacity: 0.95;
 }
 
-/* ==========================================================================
-   CARDS
-   ========================================================================== */
 .card {
     background: var(--branco);
     padding: 2.3rem;
@@ -112,13 +98,8 @@ nav a:hover {
     box-shadow: 0 18px 35px rgba(129, 207, 255, 0.25);
 }
 
-.card h1, .card h2, .card h3 {
-    color: var(--azul-escuro);
-}
+.card h1, .card h2, .card h3 { color: var(--azul-escuro); }
 
-/* ==========================================================================
-   FORMULÁRIOS E BOTÕES
-   ========================================================================== */
 input, select {
     width: 100%;
     padding: 14px 16px;
@@ -161,9 +142,6 @@ button:disabled {
     transform: none;
 }
 
-/* ==========================================================================
-   TABELAS
-   ========================================================================== */
 table {
     width: 100%;
     border-collapse: collapse;
@@ -184,13 +162,8 @@ th, td {
     border-bottom: 1px solid #eee;
 }
 
-tbody tr:hover {
-    background-color: #F8F4EB;
-}
+tbody tr:hover { background-color: #F8F4EB; }
 
-/* ==========================================================================
-   RODAPÉ
-   ========================================================================== */
 .rodape {
     background: var(--azul-escuro);
     color: #E0F0FF;
@@ -200,10 +173,7 @@ tbody tr:hover {
     border-top: 6px solid var(--rosa-bebe);
 }
 
-/* Pequenos ajustes visuais */
-h1, h2, h3 {
-    font-weight: 700;
-}
+h1, h2, h3 { font-weight: 700; }
 
 label {
     font-weight: 600;
@@ -212,29 +182,136 @@ label {
     margin: 8px 0 4px;
 }
 
-/* Responsivo */
 @media (max-width: 768px) {
-    .banner {
-        padding: 50px 16px;
-    }
-    .banner h1 {
-        font-size: 2.2rem;
-    }
-    .banner p {
-        font-size: 1.1rem;
-    }
-    .card {
-        padding: 1.5rem;
-    }
-    nav a {
-        padding: 10px 16px;
-        font-size: 0.95rem;
-    }
-    th, td {
-        padding: 10px 8px;
-        font-size: 0.95rem;
-    }
-    .container {
-        padding: 1.5rem 1rem;
-    }
+    .banner { padding: 50px 16px; }
+    .banner h1 { font-size: 2.2rem; }
+    .banner p { font-size: 1.1rem; }
+    .card { padding: 1.5rem; }
+    nav a { padding: 10px 16px; font-size: 0.95rem; }
+    th, td { padding: 10px 8px; font-size: 0.95rem; }
+    .container { padding: 1.5rem 1rem; }
+}
+
+nav.bc-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.9rem 1.5rem;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.bc-nav-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    flex: 1;
+}
+
+nav.bc-nav a.ativo { background: rgba(255,255,255,0.35); }
+
+.bc-perfil-wrap { position: relative; margin-left: auto; }
+
+.bc-perfil-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.2) !important;
+    box-shadow: none !important;
+    padding: 8px 14px !important;
+    font-size: 0.95rem !important;
+    border-radius: 50px !important;
+    transform: none !important;
+}
+
+.bc-perfil-btn:hover {
+    background: rgba(255,255,255,0.35) !important;
+    transform: none !important;
+}
+
+.bc-perfil-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--rosa-bebe);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.bc-perfil-nome {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bc-perfil-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    background: #fff;
+    color: var(--texto);
+    border-radius: 14px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+    min-width: 200px;
+    z-index: 200;
+    padding: 12px;
+    border: 1px solid var(--bege-escuro);
+}
+
+.bc-perfil-info {
+    padding: 6px 8px 12px;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 10px;
+}
+
+.bc-perfil-info strong { display: block; color: var(--azul-escuro); }
+.bc-perfil-info small { color: var(--texto-claro); }
+
+.bc-sair {
+    width: 100%;
+    background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
+    box-shadow: none !important;
+    padding: 10px !important;
+    font-size: 0.95rem !important;
+}
+
+.bc-sair:hover { transform: none !important; }
+
+.auth-tabs { display: flex; gap: 8px; margin-bottom: 18px; }
+
+.auth-tabs button {
+    flex: 1;
+    background: var(--bege) !important;
+    color: var(--texto) !important;
+    box-shadow: none !important;
+    border: 2px solid var(--bege-escuro) !important;
+}
+
+.auth-tabs button.ativo {
+    background: linear-gradient(135deg, var(--rosa-bebe), #FF7CA8) !important;
+    color: #fff !important;
+    border-color: transparent !important;
+}
+
+.auth-tabs button:hover { transform: none !important; }
+
+.msg-feedback {
+    padding: 12px 16px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    display: none;
+}
+.msg-erro { background: #f8d7da; color: #721c24; }
+.msg-sucesso { background: #d4edda; color: #155724; }
+
+@media (max-width: 640px) {
+    .bc-perfil-nome { display: none; }
+    nav.bc-nav { justify-content: center; }
+    .bc-perfil-wrap { margin-left: 0; width: 100%; display: flex; justify-content: center; }
 }
