@@ -4,146 +4,71 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="estilo.css">
-    <title>Bem Caseiro - Consultar Pedidos</title>
+    <title>Bem Caseiro - Consulta</title>
     <style>
-        .detalhes-linha td {
-            background: #F8F4EB;
-            font-size: 0.95rem;
-        }
-        .btn-detalhes {
-            background: linear-gradient(135deg, var(--azul-bebe), var(--azul-escuro)) !important;
-            padding: 8px 14px !important;
-            font-size: 0.9rem !important;
-            box-shadow: none !important;
-        }
-        .btn-detalhes:hover {
-            transform: none !important;
-        }
-        .btn-sair {
-            background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
-            padding: 8px 16px !important;
-            font-size: 0.95rem !important;
-            box-shadow: none !important;
-        }
-        .lista-itens {
-            margin: 0;
-            padding-left: 18px;
-        }
-        #busca {
-            margin-bottom: 15px;
-        }
-        .topo-consulta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin-bottom: 8px;
-        }
+        .detalhes-linha td { background:#F8F4EB; font-size:0.95rem; }
+        .btn-detalhes { background:linear-gradient(135deg,var(--azul-bebe),var(--azul-escuro)) !important; padding:8px 14px !important; font-size:0.9rem !important; box-shadow:none !important; }
+        .lista-itens { margin:0; padding-left:18px; }
     </style>
 </head>
 <body>
-    <nav>
-        <a href="index.html">Home</a>
-        <a href="clientes.html">Clientes</a>
-        <a href="servicos.html">Serviços</a>
-        <a href="agendamentos.html">Agendamentos</a>
-        <a href="login.html">Consulta</a>
-    </nav>
-
+    <nav class="bc-nav"></nav>
     <header class="banner">
         <img src="logo-bem-caseiro.png" alt="Bem Caseiro" style="height: 80px; width: auto; margin-bottom: 15px;">
         <h1>Consulta de Pedidos</h1>
-        <p>Histórico de agendamentos e entregas</p>
+        <p>Área exclusiva do administrador</p>
     </header>
-
     <div class="container">
         <div class="card">
-            <div class="topo-consulta">
-                <h2 style="margin: 0;">Pedidos Realizados</h2>
-                <button type="button" class="btn-sair" id="btn-sair">Sair</button>
-            </div>
+            <h2>Todos os pedidos</h2>
             <input type="text" id="busca" placeholder="Buscar por cliente, data ou responsável..." oninput="filtrarTabela()">
-
             <table>
                 <thead>
                     <tr>
-                        <th>Data</th>
-                        <th>Cliente</th>
-                        <th>Responsável</th>
-                        <th>Valor Total</th>
-                        <th>Tempo</th>
-                        <th></th>
+                        <th>Data</th><th>Cliente</th><th>Responsável</th>
+                        <th>Valor</th><th>Tempo</th><th></th>
                     </tr>
                 </thead>
                 <tbody id="lista-agendamentos">
-                    <tr><td colspan="6" style="text-align:center; color: var(--texto-claro);">Verificando acesso...</td></tr>
+                    <tr><td colspan="6" style="text-align:center;">Carregando...</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
-
-    <footer class="rodape">
-        <p>&copy; 2026 Bem Caseiro - Pães e Delícias</p>
-    </footer>
-
+    <footer class="rodape"><p>&copy; 2026 Bem Caseiro - Pães e Delícias</p></footer>
+    <script src="auth.js"></script>
     <script>
-        const TOKEN_KEY = 'bem_caseiro_auth_token';
+        if (!bcRequireAdmin()) throw new Error('redirect');
+        bcRenderChrome('consulta');
+
         let agendamentos = [];
 
-        function getToken() {
-            return sessionStorage.getItem(TOKEN_KEY);
+        function formatarPreco(v) {
+            return Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
-
-        function authHeaders() {
-            const token = getToken();
-            return token ? { 'Authorization': 'Bearer ' + token } : {};
-        }
-
-        function irParaLogin() {
-            sessionStorage.removeItem(TOKEN_KEY);
-            window.location.href = 'login.html';
-        }
-
-        function escapeHtml(text) {
-            if (text == null) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        function formatarPreco(valor) {
-            return Number(valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        }
-
-        function formatarData(dataISO) {
-            if (!dataISO) return '-';
-            const partes = dataISO.split('-');
-            if (partes.length === 3) return `${partes[2]}/${partes[1]}/${partes[0]}`;
-            return dataISO;
+        function formatarData(d) {
+            if (!d) return '-';
+            const p = d.split('-');
+            return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : d;
         }
 
         function renderTabela(lista) {
             const corpo = document.getElementById('lista-agendamentos');
-            if (!lista || lista.length === 0) {
-                corpo.innerHTML = '<tr><td colspan="6" style="text-align:center; color: var(--texto-claro);">Nenhum pedido encontrado.</td></tr>';
+            if (!lista.length) {
+                corpo.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--texto-claro);">Nenhum pedido.</td></tr>';
                 return;
             }
-
             corpo.innerHTML = lista.map(a => `
-                <tr data-id="${a.id}">
-                    <td>${escapeHtml(formatarData(a.data))}</td>
-                    <td><strong>${escapeHtml(a.nome_cliente)}</strong></td>
-                    <td>${escapeHtml(a.responsavel)}</td>
+                <tr>
+                    <td>${bcEscape(formatarData(a.data))}</td>
+                    <td><strong>${bcEscape(a.nome_cliente)}</strong></td>
+                    <td>${bcEscape(a.responsavel)}</td>
                     <td>R$ ${formatarPreco(a.total)}</td>
                     <td>${a.tempo_total || 0} min</td>
                     <td><button type="button" class="btn-detalhes" data-id="${a.id}">Detalhes</button></td>
                 </tr>
-                <tr class="detalhes-linha" id="detalhe-${a.id}" style="display:none;">
-                    <td colspan="6">Carregando itens...</td>
-                </tr>
+                <tr class="detalhes-linha" id="detalhe-${a.id}" style="display:none;"><td colspan="6"></td></tr>
             `).join('');
-
             corpo.querySelectorAll('.btn-detalhes').forEach(btn => {
                 btn.addEventListener('click', () => toggleDetalhes(btn.dataset.id, btn));
             });
@@ -151,87 +76,46 @@
 
         async function toggleDetalhes(id, btn) {
             const linha = document.getElementById('detalhe-' + id);
-            if (!linha) return;
-
             if (linha.style.display === 'table-row') {
                 linha.style.display = 'none';
                 btn.textContent = 'Detalhes';
                 return;
             }
-
             linha.style.display = 'table-row';
             btn.textContent = 'Ocultar';
-            linha.querySelector('td').innerHTML = 'Carregando itens...';
-
+            linha.querySelector('td').textContent = 'Carregando...';
             try {
-                const res = await fetch('/detalhes-agendamento/' + id, { headers: authHeaders() });
-                if (res.status === 401) return irParaLogin();
+                const res = await fetch('/detalhes-agendamento/' + id, { headers: bcAuthHeaders() });
+                if (res.status === 401) return bcLogout();
                 const itens = await res.json();
-                if (!itens || itens.length === 0) {
-                    linha.querySelector('td').innerHTML = '<em>Nenhum item encontrado neste pedido.</em>';
+                if (!itens.length) {
+                    linha.querySelector('td').innerHTML = '<em>Sem itens.</em>';
                     return;
                 }
-                const html = `
-                    <strong>Itens do pedido:</strong>
-                    <ul class="lista-itens">
-                        ${itens.map(i => `
-                            <li>${escapeHtml(i.descricao)} — R$ ${formatarPreco(i.preco_cobrado)} (${i.tempo_estimado} min)</li>
-                        `).join('')}
-                    </ul>
-                `;
-                linha.querySelector('td').innerHTML = html;
+                linha.querySelector('td').innerHTML = `<strong>Itens:</strong><ul class="lista-itens">${
+                    itens.map(i => `<li>${bcEscape(i.descricao)} — R$ ${formatarPreco(i.preco_cobrado)}</li>`).join('')
+                }</ul>`;
             } catch (e) {
-                linha.querySelector('td').innerHTML = '<span style="color:#c0392b;">Erro ao carregar detalhes.</span>';
+                linha.querySelector('td').innerHTML = '<span style="color:#c0392b;">Erro ao carregar.</span>';
             }
         }
 
         function filtrarTabela() {
-            const termo = document.getElementById('busca').value.toLowerCase().trim();
-            if (!termo) {
-                renderTabela(agendamentos);
-                return;
-            }
-            const filtrados = agendamentos.filter(a => {
-                const dataFmt = formatarData(a.data).toLowerCase();
-                return (
-                    (a.nome_cliente || '').toLowerCase().includes(termo) ||
-                    (a.responsavel || '').toLowerCase().includes(termo) ||
-                    (a.data || '').toLowerCase().includes(termo) ||
-                    dataFmt.includes(termo)
-                );
-            });
-            renderTabela(filtrados);
+            const t = document.getElementById('busca').value.toLowerCase().trim();
+            if (!t) return renderTabela(agendamentos);
+            renderTabela(agendamentos.filter(a =>
+                (a.nome_cliente || '').toLowerCase().includes(t) ||
+                (a.responsavel || '').toLowerCase().includes(t) ||
+                (a.data || '').includes(t) ||
+                formatarData(a.data).includes(t)
+            ));
         }
 
-        document.getElementById('btn-sair').addEventListener('click', irParaLogin);
-
-        (async function iniciar() {
-            const token = getToken();
-            if (!token) {
-                irParaLogin();
-                return;
-            }
-
-            try {
-                const check = await fetch('/verificar-auth', { headers: authHeaders() });
-                const authData = await check.json();
-                if (!authData.autenticado) {
-                    irParaLogin();
-                    return;
-                }
-
-                const res = await fetch('/listar-agendamentos', { headers: authHeaders() });
-                if (res.status === 401) {
-                    irParaLogin();
-                    return;
-                }
-                if (!res.ok) throw new Error('Erro');
-                agendamentos = await res.json() || [];
-                renderTabela(agendamentos);
-            } catch (e) {
-                document.getElementById('lista-agendamentos').innerHTML =
-                    '<tr><td colspan="6" style="text-align:center; color:#c0392b;">Erro ao carregar pedidos. Verifique se o servidor está rodando.</td></tr>';
-            }
+        (async () => {
+            const res = await fetch('/listar-agendamentos', { headers: bcAuthHeaders() });
+            if (res.status === 401) return bcLogout();
+            agendamentos = await res.json() || [];
+            renderTabela(agendamentos);
         })();
     </script>
 </body>
