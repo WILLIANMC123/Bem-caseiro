@@ -4,96 +4,88 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="estilo.css">
-    <title>Bem Caseiro - Serviços</title>
+    <title>Bem Caseiro - Produtos</title>
 </head>
 <body>
-    <nav>
-        <a href="index.html">Home</a>
-        <a href="clientes.html">Clientes</a>
-        <a href="servicos.html">Serviços</a>
-        <a href="agendamentos.html">Agendamentos</a>
-        <a href="login.html">Consulta</a>
-    </nav>
-
+    <nav class="bc-nav"></nav>
     <header class="banner">
         <img src="logo-bem-caseiro.png" alt="Bem Caseiro" style="height: 80px; width: auto; margin-bottom: 15px;">
-        <h1>Gestão de Serviços</h1>
-        <p>Catálogo de produtos e serviços</p>
+        <h1>Produtos e Serviços</h1>
+        <p id="subtitulo">Catálogo</p>
     </header>
-
     <div class="container">
-        <div class="card">
-            <h2>Novo Serviço / Produto</h2>
-            <form action="/salvar-servico" method="POST">
+        <div class="card" id="card-form" style="display:none;">
+            <h2>Novo Produto / Serviço</h2>
+            <form id="form-servico">
                 <label for="descricao">Descrição:</label>
-                <input type="text" id="descricao" name="descricao" placeholder="Ex: Pão Francês (dúzia)" required maxlength="150">
-
+                <input type="text" id="descricao" name="descricao" required maxlength="150" placeholder="Ex: Pão Francês (dúzia)">
                 <label for="preco">Preço (R$):</label>
-                <input type="number" step="0.01" min="0" id="preco" name="preco" placeholder="0.00" required>
-
+                <input type="number" step="0.01" min="0" id="preco" name="preco" required placeholder="0.00">
                 <label for="tempo_estimado">Tempo de Preparo (min):</label>
-                <input type="number" min="0" id="tempo_estimado" name="tempo_estimado" placeholder="Ex: 30" required>
-
-                <button type="submit">Salvar Serviço</button>
+                <input type="number" min="0" id="tempo_estimado" name="tempo_estimado" required placeholder="30">
+                <button type="submit">Salvar</button>
             </form>
         </div>
-
-        <div class="card" style="margin-top: 20px;">
-            <h2>Serviços Disponíveis</h2>
+        <div class="card">
+            <h2>Disponíveis</h2>
             <table>
-                <thead>
-                    <tr>
-                        <th>Descrição</th>
-                        <th>Preço (R$)</th>
-                        <th>Tempo (min)</th>
-                    </tr>
-                </thead>
-                <tbody id="lista-servicos">
-                    <tr><td colspan="3" style="text-align:center; color: var(--texto-claro);">Carregando...</td></tr>
-                </tbody>
+                <thead><tr><th>Descrição</th><th>Preço</th><th>Tempo</th></tr></thead>
+                <tbody id="lista-servicos"><tr><td colspan="3" style="text-align:center;">Carregando...</td></tr></tbody>
             </table>
         </div>
     </div>
-
-    <footer class="rodape">
-        <p>&copy; 2026 Bem Caseiro - Pães e Delícias</p>
-    </footer>
-
+    <footer class="rodape"><p>&copy; 2026 Bem Caseiro - Pães e Delícias</p></footer>
+    <script src="auth.js"></script>
     <script>
-        function escapeHtml(text) {
-            if (text == null) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
+        const s = bcRequireLogin();
+        if (!s) throw new Error('redirect');
+        bcRenderChrome('servicos');
 
-        function formatarPreco(valor) {
-            return Number(valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        }
-
-        fetch('/listar-servicos')
-            .then(res => {
-                if (!res.ok) throw new Error('Erro ao carregar');
-                return res.json();
-            })
-            .then(servicos => {
-                const corpo = document.getElementById('lista-servicos');
-                if (!servicos || servicos.length === 0) {
-                    corpo.innerHTML = '<tr><td colspan="3" style="text-align:center; color: var(--texto-claro);">Nenhum serviço cadastrado ainda.</td></tr>';
-                    return;
+        if (bcIsAdmin()) {
+            document.getElementById('card-form').style.display = 'block';
+            document.getElementById('subtitulo').textContent = 'Cadastre e visualize produtos (admin)';
+            document.getElementById('form-servico').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const fd = new FormData(e.target);
+                const res = await fetch('/salvar-servico', {
+                    method: 'POST',
+                    headers: bcAuthHeaders(),
+                    body: new URLSearchParams(fd)
+                });
+                if (res.status === 401) return bcLogout();
+                if (res.redirected || res.ok) {
+                    e.target.reset();
+                    carregar();
+                } else {
+                    alert('Erro ao salvar serviço');
                 }
-                corpo.innerHTML = servicos.map(s => `
-                    <tr>
-                        <td><strong>${escapeHtml(s.descricao)}</strong></td>
-                        <td>R$ ${formatarPreco(s.preco)}</td>
-                        <td>${s.tempo_estimado} min</td>
-                    </tr>
-                `).join('');
-            })
-            .catch(() => {
-                document.getElementById('lista-servicos').innerHTML =
-                    '<tr><td colspan="3" style="text-align:center; color:#c0392b;">Erro ao carregar serviços. Verifique se o servidor está rodando.</td></tr>';
             });
+        } else {
+            document.getElementById('subtitulo').textContent = 'Veja o que oferecemos e faça seu pedido';
+        }
+
+        function formatarPreco(v) {
+            return Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        async function carregar() {
+            const res = await fetch('/listar-servicos', { headers: bcAuthHeaders() });
+            if (res.status === 401) return bcLogout();
+            const servicos = await res.json();
+            const corpo = document.getElementById('lista-servicos');
+            if (!servicos.length) {
+                corpo.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--texto-claro);">Nenhum produto cadastrado.</td></tr>';
+                return;
+            }
+            corpo.innerHTML = servicos.map(x => `
+                <tr>
+                    <td><strong>${bcEscape(x.descricao)}</strong></td>
+                    <td>R$ ${formatarPreco(x.preco)}</td>
+                    <td>${x.tempo_estimado} min</td>
+                </tr>
+            `).join('');
+        }
+        carregar();
     </script>
 </body>
 </html>

@@ -7,89 +7,82 @@
     <title>Bem Caseiro - Clientes</title>
 </head>
 <body>
-    <nav>
-        <a href="index.html">Home</a>
-        <a href="clientes.html">Clientes</a>
-        <a href="servicos.html">Serviços</a>
-        <a href="agendamentos.html">Agendamentos</a>
-        <a href="login.html">Consulta</a>
-    </nav>
-
+    <nav class="bc-nav"></nav>
     <header class="banner">
         <img src="logo-bem-caseiro.png" alt="Bem Caseiro" style="height: 80px; width: auto; margin-bottom: 15px;">
         <h1>Gestão de Clientes</h1>
-        <p>Cadastre e gerencie seus clientes</p>
+        <p>Cadastre e gerencie clientes (admin)</p>
     </header>
-
     <div class="container">
         <div class="card">
             <h2>Novo Cliente</h2>
-            <form action="/salvar-cliente" method="POST">
+            <form id="form-cliente">
                 <label for="nome">Nome Completo:</label>
-                <input type="text" id="nome" name="nome" placeholder="Ex: Maria Silva" required maxlength="120">
-
-                <label for="cpf">CPF / CNPJ:</label>
-                <input type="text" id="cpf" name="cpf" placeholder="000.000.000-00" required maxlength="20">
-
-                <label for="telefone">Telefone / WhatsApp:</label>
-                <input type="tel" id="telefone" name="telefone" placeholder="(00) 99999-9999" required maxlength="20">
-
+                <input type="text" id="nome" required maxlength="120" placeholder="Ex: Maria Silva">
+                <label for="cpf">CPF (senha de acesso do cliente):</label>
+                <input type="text" id="cpf" required maxlength="20" placeholder="000.000.000-00">
+                <label for="telefone">Telefone:</label>
+                <input type="tel" id="telefone" maxlength="20" placeholder="(00) 99999-9999">
                 <button type="submit">Salvar Cliente</button>
             </form>
+            <div id="feedback" class="msg-feedback"></div>
         </div>
-
-        <div class="card" style="margin-top: 20px;">
+        <div class="card">
             <h2>Clientes Cadastrados</h2>
             <table>
-                <thead>
-                    <tr>
-                        <th>Nome</th>
-                        <th>CPF/CNPJ</th>
-                        <th>Telefone</th>
-                    </tr>
-                </thead>
-                <tbody id="lista-clientes">
-                    <tr><td colspan="3" style="text-align:center; color: var(--texto-claro);">Carregando...</td></tr>
-                </tbody>
+                <thead><tr><th>Nome</th><th>CPF</th><th>Telefone</th></tr></thead>
+                <tbody id="lista-clientes"><tr><td colspan="3" style="text-align:center;">Carregando...</td></tr></tbody>
             </table>
         </div>
     </div>
-
-    <footer class="rodape">
-        <p>&copy; 2026 Bem Caseiro - Pães e Delícias</p>
-    </footer>
-
+    <footer class="rodape"><p>&copy; 2026 Bem Caseiro - Pães e Delícias</p></footer>
+    <script src="auth.js"></script>
     <script>
-        function escapeHtml(text) {
-            if (text == null) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
+        if (!bcRequireAdmin()) throw new Error('redirect');
+        bcRenderChrome('clientes');
+
+        async function carregar() {
+            const res = await fetch('/listar-clientes', { headers: bcAuthHeaders() });
+            if (res.status === 401) return bcLogout();
+            const clientes = await res.json();
+            const corpo = document.getElementById('lista-clientes');
+            if (!clientes.length) {
+                corpo.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--texto-claro);">Nenhum cliente.</td></tr>';
+                return;
+            }
+            corpo.innerHTML = clientes.map(c => `
+                <tr><td><strong>${bcEscape(c.nome)}</strong></td><td>${bcEscape(c.cpf)}</td><td>${bcEscape(c.telefone || '-')}</td></tr>
+            `).join('');
         }
 
-        fetch('/listar-clientes')
-            .then(res => {
-                if (!res.ok) throw new Error('Erro ao carregar');
-                return res.json();
-            })
-            .then(clientes => {
-                const corpo = document.getElementById('lista-clientes');
-                if (!clientes || clientes.length === 0) {
-                    corpo.innerHTML = '<tr><td colspan="3" style="text-align:center; color: var(--texto-claro);">Nenhum cliente cadastrado ainda.</td></tr>';
-                    return;
-                }
-                corpo.innerHTML = clientes.map(c => `
-                    <tr>
-                        <td><strong>${escapeHtml(c.nome)}</strong></td>
-                        <td>${escapeHtml(c.cpf)}</td>
-                        <td>${escapeHtml(c.telefone)}</td>
-                    </tr>
-                `).join('');
-            })
-            .catch(() => {
-                document.getElementById('lista-clientes').innerHTML =
-                    '<tr><td colspan="3" style="text-align:center; color:#c0392b;">Erro ao carregar clientes. Verifique se o servidor está rodando.</td></tr>';
-            });
+        document.getElementById('form-cliente').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fb = document.getElementById('feedback');
+            const body = {
+                nome: document.getElementById('nome').value.trim(),
+                cpf: document.getElementById('cpf').value.trim(),
+                telefone: document.getElementById('telefone').value.trim()
+            };
+            try {
+                const res = await fetch('/salvar-cliente', {
+                    method: 'POST',
+                    headers: { ...bcAuthHeaders(), 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data.error || 'Erro ao salvar');
+                fb.className = 'msg-feedback msg-sucesso';
+                fb.textContent = 'Cliente salvo!';
+                fb.style.display = 'block';
+                e.target.reset();
+                carregar();
+            } catch (err) {
+                fb.className = 'msg-feedback msg-erro';
+                fb.textContent = err.message;
+                fb.style.display = 'block';
+            }
+        });
+        carregar();
     </script>
 </body>
 </html>
