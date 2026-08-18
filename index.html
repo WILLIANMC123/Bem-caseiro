@@ -4,22 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="estilo.css">
-    <title>Bem Caseiro - Pães e Delícias</title>
+    <title>Bem Caseiro - Entrar</title>
 </head>
 <body>
-    <nav>
-        <a href="index.html">Home</a>
-        <a href="clientes.html">Clientes</a>
-        <a href="servicos.html">Serviços</a>
-        <a href="agendamentos.html">Agendamentos</a>
-        <a href="login.html">Consulta</a>
-    </nav>
-
     <header class="banner">
         <div style="display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap;">
-            <img src="logo-bem-caseiro.png"
-                 alt="Bem Caseiro"
-                 style="height: 130px; width: auto;">
+            <img src="logo-bem-caseiro.png" alt="Bem Caseiro" style="height: 100px; width: auto;">
             <div>
                 <h1>Bem Caseiro</h1>
                 <p>Pães e Delícias Caseiras</p>
@@ -28,32 +18,114 @@
     </header>
 
     <div class="container">
-        <div class="card">
-            <h1>Bem-vindo ao Bem Caseiro</h1>
-            <p>Sistema de gestão completo para controlar clientes, serviços, produção e agendamentos da sua padaria artesanal.</p>
-        </div>
+        <div class="card" style="max-width: 460px; margin: 0 auto;">
+            <div class="auth-tabs">
+                <button type="button" class="ativo" id="tab-entrar">Entrar</button>
+                <button type="button" id="tab-cadastrar">Cadastrar</button>
+            </div>
 
-        <div class="card" style="margin-top: 20px;">
-            <h3>🍞 Módulos do Sistema:</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Módulo</th>
-                        <th>Descrição</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr><td>👥 Clientes</td><td>Gerencie seus clientes e contatos</td></tr>
-                    <tr><td>🛒 Serviços</td><td>Catálogo de produtos e serviços oferecidos</td></tr>
-                    <tr><td>📅 Agendamentos</td><td>Controle de pedidos e entregas</td></tr>
-                    <tr><td>🔍 Consulta</td><td>Histórico completo de pedidos realizados</td></tr>
-                </tbody>
-            </table>
+            <div id="feedback" class="msg-feedback"></div>
+
+            <form id="form-entrar">
+                <h2 style="margin-top:0;">Entrar na conta</h2>
+                <p style="color:var(--texto-claro); margin-top:0;">Use seu <strong>nome</strong> e seu <strong>CPF</strong> (senha).</p>
+                <label for="login-usuario">Nome (usuário)</label>
+                <input type="text" id="login-usuario" required placeholder="Seu nome completo" autocomplete="username">
+                <label for="login-senha">CPF (senha)</label>
+                <input type="password" id="login-senha" required placeholder="Seu CPF" autocomplete="current-password">
+                <button type="submit" style="width:100%; margin-top:10px;">Entrar</button>
+            </form>
+
+            <form id="form-cadastrar" style="display:none;">
+                <h2 style="margin-top:0;">Criar conta</h2>
+                <p style="color:var(--texto-claro); margin-top:0;">O <strong>nome</strong> será seu usuário e o <strong>CPF</strong> será sua senha.</p>
+                <label for="cad-nome">Nome completo (usuário)</label>
+                <input type="text" id="cad-nome" required placeholder="Ex: Maria Silva" maxlength="120">
+                <label for="cad-cpf">CPF (será sua senha)</label>
+                <input type="text" id="cad-cpf" required placeholder="000.000.000-00" maxlength="20">
+                <label for="cad-telefone">Telefone / WhatsApp (opcional)</label>
+                <input type="tel" id="cad-telefone" placeholder="(00) 99999-9999" maxlength="20">
+                <button type="submit" style="width:100%; margin-top:10px;">Cadastrar e entrar</button>
+            </form>
         </div>
     </div>
 
     <footer class="rodape">
         <p>&copy; 2026 Bem Caseiro - Pães e Delícias</p>
     </footer>
+
+    <script src="auth.js"></script>
+    <script>
+        (function () {
+            const s = bcGetSession();
+            if (s && s.token) window.location.href = 'home.html';
+        })();
+
+        const tabEntrar = document.getElementById('tab-entrar');
+        const tabCad = document.getElementById('tab-cadastrar');
+        const formEntrar = document.getElementById('form-entrar');
+        const formCad = document.getElementById('form-cadastrar');
+        const feedback = document.getElementById('feedback');
+
+        function showMsg(tipo, texto) {
+            feedback.className = 'msg-feedback ' + (tipo === 'ok' ? 'msg-sucesso' : 'msg-erro');
+            feedback.textContent = texto;
+            feedback.style.display = 'block';
+        }
+
+        tabEntrar.addEventListener('click', () => {
+            tabEntrar.classList.add('ativo');
+            tabCad.classList.remove('ativo');
+            formEntrar.style.display = 'block';
+            formCad.style.display = 'none';
+            feedback.style.display = 'none';
+        });
+        tabCad.addEventListener('click', () => {
+            tabCad.classList.add('ativo');
+            tabEntrar.classList.remove('ativo');
+            formCad.style.display = 'block';
+            formEntrar.style.display = 'none';
+            feedback.style.display = 'none';
+        });
+
+        formEntrar.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const usuario = document.getElementById('login-usuario').value.trim();
+            const senha = document.getElementById('login-senha').value.trim();
+            try {
+                const res = await fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ usuario, senha })
+                });
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error || 'Falha no login');
+                bcSetSession({ tipo: data.tipo, token: data.token, usuario: data.usuario });
+                window.location.href = 'home.html';
+            } catch (err) {
+                showMsg('erro', err.message || 'Nome ou CPF incorretos.');
+            }
+        });
+
+        formCad.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const nome = document.getElementById('cad-nome').value.trim();
+            const cpf = document.getElementById('cad-cpf').value.trim();
+            const telefone = document.getElementById('cad-telefone').value.trim();
+            try {
+                const res = await fetch('/cadastrar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nome, cpf, telefone })
+                });
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error || 'Falha no cadastro');
+                bcSetSession({ tipo: data.tipo, token: data.token, usuario: data.usuario });
+                window.location.href = 'home.html';
+            } catch (err) {
+                showMsg('erro', err.message || 'Não foi possível cadastrar.');
+            }
+        });
+    </script>
 </body>
 </html>
