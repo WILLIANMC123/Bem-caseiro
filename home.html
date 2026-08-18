@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="estilo.css">
+    <title>Bem Caseiro - Início</title>
+</head>
+<body>
+    <nav class="bc-nav"></nav>
+
+    <header class="banner">
+        <div style="display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap;">
+            <img src="logo-bem-caseiro.png" alt="Bem Caseiro" style="height: 110px; width: auto;">
+            <div>
+                <h1>Bem Caseiro</h1>
+                <p>Pães e Delícias Caseiras</p>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="card">
+            <h1 id="saudacao">Bem-vindo!</h1>
+            <p id="descricao"></p>
+        </div>
+        <div class="card" id="atalhos"></div>
+    </div>
+
+    <footer class="rodape">
+        <p>&copy; 2026 Bem Caseiro - Pães e Delícias</p>
+    </footer>
+
+    <script src="auth.js"></script>
+    <script>
+        const s = bcRequireLogin();
+        if (!s) throw new Error('redirect');
+        bcRenderChrome('home');
+
+        const nome = (s.usuario && s.usuario.nome) || '';
+        document.getElementById('saudacao').textContent =
+            s.tipo === 'admin' ? 'Olá, Administrador!' : `Olá, ${nome}!`;
+
+        if (s.tipo === 'admin') {
+            document.getElementById('descricao').textContent =
+                'Painel administrativo: gerencie clientes, produtos e consulte todos os pedidos.';
+            document.getElementById('atalhos').innerHTML = `
+                <h3>Atalhos</h3>
+                <p><a href="clientes.html">👥 Clientes</a> · <a href="servicos.html">🛒 Produtos</a> ·
+                <a href="agendamentos.html">📅 Novo pedido</a> · <a href="consulta_agendamentos.html">🔍 Consulta</a></p>
+            `;
+        } else {
+            document.getElementById('descricao').textContent =
+                'Escolha produtos e faça seu pedido ou reserva. Use o menu acima ou o perfil no canto direito para sair.';
+            document.getElementById('atalhos').innerHTML = `
+                <h3>O que deseja fazer?</h3>
+                <p><a href="servicos.html">🛒 Ver produtos</a> · <a href="agendamentos.html">📅 Novo pedido</a> ·
+                <a href="meus_pedidos.html">📋 Meus pedidos</a></p>
+            `;
+        }
+    </script>
+</body>
+</html>
