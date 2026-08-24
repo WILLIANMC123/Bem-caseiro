@@ -8,7 +8,15 @@
     <style>
         .detalhes-linha td { background:#F8F4EB; font-size:0.95rem; }
         .btn-detalhes { background:linear-gradient(135deg,var(--azul-bebe),var(--azul-escuro)) !important; padding:8px 14px !important; font-size:0.9rem !important; box-shadow:none !important; }
+        .btn-entregue { background:linear-gradient(135deg,#27ae60,#1e8449) !important; padding:8px 14px !important; font-size:0.9rem !important; box-shadow:none !important; }
+        .btn-reabrir { background:linear-gradient(135deg,#f39c12,#d68910) !important; padding:8px 14px !important; font-size:0.9rem !important; box-shadow:none !important; }
         .lista-itens { margin:0; padding-left:18px; }
+        .badge-pendente { display:inline-block; background:#f39c12; color:#fff; padding:3px 10px; border-radius:20px; font-size:0.8rem; font-weight:600; }
+        .badge-entregue { display:inline-block; background:#27ae60; color:#fff; padding:3px 10px; border-radius:20px; font-size:0.8rem; font-weight:600; }
+        .secao-titulo { margin:24px 0 12px; padding-bottom:8px; border-bottom:2px solid var(--rosa-bebe); display:flex; align-items:center; gap:10px; }
+        .secao-titulo h3 { margin:0; }
+        .contagem { background:#eee; padding:2px 10px; border-radius:12px; font-size:0.85rem; }
+        .acoes-pedido { display:flex; gap:6px; flex-wrap:wrap; }
     </style>
 </head>
 <body>
@@ -20,17 +28,38 @@
     </header>
     <div class="container">
         <div class="card">
-            <h2>Todos os pedidos</h2>
+            <h2>Pedidos</h2>
             <input type="text" id="busca" placeholder="Buscar por cliente, data ou responsável..." oninput="filtrarTabela()">
+
+            <div class="secao-titulo">
+                <h3>⏳ Pendentes (não entregues)</h3>
+                <span class="contagem" id="cont-pendentes">0</span>
+            </div>
             <table>
                 <thead>
                     <tr>
                         <th>Data</th><th>Cliente</th><th>Responsável</th>
-                        <th>Valor</th><th></th>
+                        <th>Valor</th><th>Status</th><th></th>
                     </tr>
                 </thead>
-                <tbody id="lista-agendamentos">
-                    <tr><td colspan="5" style="text-align:center;">Carregando...</td></tr>
+                <tbody id="lista-pendentes">
+                    <tr><td colspan="6" style="text-align:center;">Carregando...</td></tr>
+                </tbody>
+            </table>
+
+            <div class="secao-titulo">
+                <h3>✅ Entregues</h3>
+                <span class="contagem" id="cont-entregues">0</span>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Data</th><th>Cliente</th><th>Responsável</th>
+                        <th>Valor</th><th>Status</th><th></th>
+                    </tr>
+                </thead>
+                <tbody id="lista-entregues">
+                    <tr><td colspan="6" style="text-align:center;">Carregando...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -52,25 +81,75 @@
             return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : d;
         }
 
-        function renderTabela(lista) {
-            const corpo = document.getElementById('lista-agendamentos');
-            if (!lista.length) {
-                corpo.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--texto-claro);">Nenhum pedido.</td></tr>';
-                return;
-            }
-            corpo.innerHTML = lista.map(a => `
+        function linhaPedido(a) {
+            const entregue = Number(a.entregue) === 1;
+            const badge = entregue
+                ? '<span class="badge-entregue">Entregue</span>'
+                : '<span class="badge-pendente">Pendente</span>';
+            const btnStatus = entregue
+                ? `<button type="button" class="btn-reabrir" data-id="${a.id}" data-entregue="0">Reabrir</button>`
+                : `<button type="button" class="btn-entregue" data-id="${a.id}" data-entregue="1">Marcar entregue</button>`;
+            return `
                 <tr>
                     <td>${bcEscape(formatarData(a.data))}</td>
                     <td><strong>${bcEscape(a.nome_cliente)}</strong></td>
                     <td>${bcEscape(a.responsavel)}</td>
                     <td>R$ ${formatarPreco(a.total)}</td>
-                    <td><button type="button" class="btn-detalhes" data-id="${a.id}">Detalhes</button></td>
+                    <td>${badge}</td>
+                    <td>
+                        <div class="acoes-pedido">
+                            <button type="button" class="btn-detalhes" data-id="${a.id}">Detalhes</button>
+                            ${btnStatus}
+                        </div>
+                    </td>
                 </tr>
-                <tr class="detalhes-linha" id="detalhe-${a.id}" style="display:none;"><td colspan="5"></td></tr>
-            `).join('');
-            corpo.querySelectorAll('.btn-detalhes').forEach(btn => {
+                <tr class="detalhes-linha" id="detalhe-${a.id}" style="display:none;"><td colspan="6"></td></tr>
+            `;
+        }
+
+        function renderTabela(lista) {
+            const pendentes = lista.filter(a => Number(a.entregue) !== 1);
+            const entregues = lista.filter(a => Number(a.entregue) === 1);
+
+            document.getElementById('cont-pendentes').textContent = pendentes.length;
+            document.getElementById('cont-entregues').textContent = entregues.length;
+
+            const corpoP = document.getElementById('lista-pendentes');
+            const corpoE = document.getElementById('lista-entregues');
+
+            corpoP.innerHTML = pendentes.length
+                ? pendentes.map(linhaPedido).join('')
+                : '<tr><td colspan="6" style="text-align:center;color:var(--texto-claro);">Nenhum pedido pendente.</td></tr>';
+            corpoE.innerHTML = entregues.length
+                ? entregues.map(linhaPedido).join('')
+                : '<tr><td colspan="6" style="text-align:center;color:var(--texto-claro);">Nenhum pedido entregue ainda.</td></tr>';
+
+            document.querySelectorAll('.btn-detalhes').forEach(btn => {
                 btn.addEventListener('click', () => toggleDetalhes(btn.dataset.id, btn));
             });
+            document.querySelectorAll('.btn-entregue, .btn-reabrir').forEach(btn => {
+                btn.addEventListener('click', () => marcarEntregue(btn.dataset.id, Number(btn.dataset.entregue), btn));
+            });
+        }
+
+        async function marcarEntregue(id, entregue, btn) {
+            btn.disabled = true;
+            try {
+                const res = await fetch('/marcar-entregue/' + id, {
+                    method: 'POST',
+                    headers: { ...bcAuthHeaders(), 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ entregue })
+                });
+                if (res.status === 401) return bcLogout();
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error || 'Erro');
+                const item = agendamentos.find(a => String(a.id) === String(id));
+                if (item) item.entregue = data.entregue;
+                filtrarTabela();
+            } catch (e) {
+                alert(e.message || 'Erro ao atualizar status');
+                btn.disabled = false;
+            }
         }
 
         async function toggleDetalhes(id, btn) {
@@ -92,7 +171,11 @@
                     return;
                 }
                 linha.querySelector('td').innerHTML = `<strong>Itens:</strong><ul class="lista-itens">${
-                    itens.map(i => `<li>${bcEscape(i.descricao)} — R$ ${formatarPreco(i.preco_cobrado)} · ${bcEscape(formatarQuandoFeito(i.tempo_estimado))}</li>`).join('')
+                    itens.map(i => {
+                        const qtd = Number(i.quantidade) || 1;
+                        const sub = Number(i.preco_cobrado) * qtd;
+                        return `<li>${bcEscape(i.descricao)} × ${qtd} — R$ ${formatarPreco(i.preco_cobrado)} un. (R$ ${formatarPreco(sub)}) · ${bcEscape(formatarQuandoFeito(i.tempo_estimado))}</li>`;
+                    }).join('')
                 }</ul>`;
             } catch (e) {
                 linha.querySelector('td').innerHTML = '<span style="color:#c0392b;">Erro ao carregar.</span>';
