@@ -46,7 +46,7 @@
                     <p id="carrinho-vazio" style="color:var(--texto-claro); margin:0; text-align:center;">Nenhum item ainda.</p>
                     <div id="lista-carrinho"></div>
                 </div>
-                <div class="resumo-pedido" id="resumo">Total: R$ 0,00 | Tempo: 0 min</div>
+                <div class="resumo-pedido" id="resumo">Total: R$ 0,00</div>
                 <div id="feedback" class="msg-feedback"></div>
                 <button type="submit" id="btn-finalizar" style="width:100%; margin-top:15px;">Finalizar Pedido</button>
             </form>
@@ -68,9 +68,8 @@
 
         function atualizarResumo() {
             const total = carrinho.reduce((s, i) => s + Number(i.preco), 0);
-            const tempo = carrinho.reduce((s, i) => s + Number(i.tempo_estimado), 0);
             document.getElementById('resumo').innerHTML =
-                `Total: <strong>R$ ${formatarPreco(total)}</strong> | Tempo: <strong>${tempo} min</strong>`;
+                `Total: <strong>R$ ${formatarPreco(total)}</strong>`;
         }
 
         function renderCarrinho() {
@@ -84,7 +83,7 @@
                 lista.innerHTML = carrinho.map((item, idx) => `
                     <div class="item-carrinho">
                         <div><strong>${bcEscape(item.descricao)}</strong><br>
-                        <small>R$ ${formatarPreco(item.preco)} · ${item.tempo_estimado} min</small></div>
+                        <small>R$ ${formatarPreco(item.preco)} · ${bcEscape(formatarQuandoFeito(item.tempo_estimado))}</small></div>
                         <button type="button" class="btn-remover" data-idx="${idx}">Remover</button>
                     </div>
                 `).join('');
@@ -107,7 +106,7 @@
             servicos.forEach(s => {
                 const o = document.createElement('option');
                 o.value = s.id;
-                o.textContent = `${s.descricao} — R$ ${formatarPreco(s.preco)}`;
+                o.textContent = `${s.descricao} — R$ ${formatarPreco(s.preco)} (${formatarQuandoFeito(s.tempo_estimado)})`;
                 sel.appendChild(o);
             });
         }
@@ -176,7 +175,7 @@
             }
 
             const total = carrinho.reduce((s, i) => s + Number(i.preco), 0);
-            const tempo_total = carrinho.reduce((s, i) => s + Number(i.tempo_estimado), 0);
+            const tempo_total = carrinho.reduce((m, i) => Math.max(m, Number(i.tempo_estimado) || 0), 0);
             btn.disabled = true;
             btn.textContent = 'Salvando...';
 
