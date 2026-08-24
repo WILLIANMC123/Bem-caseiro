@@ -127,3 +127,14 @@ function bcRenderChrome(activePage) {
         menu.addEventListener('click', (e) => e.stopPropagation());
     }
 }
+
+/** 0 = feito hoje; 1 = ontem; n = há n dias */
+function formatarQuandoFeito(dias) {
+    const n = parseInt(dias, 10);
+    if (isNaN(n) || n < 0) return '—';
+    if (n === 0) return 'Feito hoje';
+    if (n === 1) return 'Feito ontem';
+    if (n === 2) return 'Feito há 2 dias';
+    if (n <= 7) return 'Feito há ' + n + ' dias';
+    return 'Feito há mais de uma semana';
+}

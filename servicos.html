@@ -21,15 +21,23 @@
                 <input type="text" id="descricao" name="descricao" required maxlength="150" placeholder="Ex: Pão Francês (dúzia)">
                 <label for="preco">Preço (R$):</label>
                 <input type="number" step="0.01" min="0" id="preco" name="preco" required placeholder="0.00">
-                <label for="tempo_estimado">Tempo de Preparo (min):</label>
-                <input type="number" min="0" id="tempo_estimado" name="tempo_estimado" required placeholder="30">
+                <label for="tempo_estimado">Quando foi feito?</label>
+                <select id="tempo_estimado" name="tempo_estimado" required>
+                    <option value="0">Feito hoje</option>
+                    <option value="1">Feito ontem</option>
+                    <option value="2">Feito há 2 dias</option>
+                    <option value="3">Feito há 3 dias</option>
+                    <option value="4">Feito há 4 dias</option>
+                    <option value="5">Feito há 5 dias</option>
+                    <option value="7">Feito há cerca de 1 semana</option>
+                </select>
                 <button type="submit">Salvar</button>
             </form>
         </div>
         <div class="card">
             <h2>Disponíveis</h2>
             <table>
-                <thead><tr><th>Descrição</th><th>Preço</th><th>Tempo</th></tr></thead>
+                <thead><tr><th>Descrição</th><th>Preço</th><th>Quando foi feito</th></tr></thead>
                 <tbody id="lista-servicos"><tr><td colspan="3" style="text-align:center;">Carregando...</td></tr></tbody>
             </table>
         </div>
@@ -81,7 +89,7 @@
                 <tr>
                     <td><strong>${bcEscape(x.descricao)}</strong></td>
                     <td>R$ ${formatarPreco(x.preco)}</td>
-                    <td>${x.tempo_estimado} min</td>
+                    <td>${bcEscape(formatarQuandoFeito(x.tempo_estimado))}</td>
                 </tr>
             `).join('');
         }
