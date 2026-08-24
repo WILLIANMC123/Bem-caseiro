@@ -439,15 +439,10 @@ app.post('/marcar-entregue/:id', exigirAdmin, (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-const HOST = process.env.HOST || '0.0.0.0';
-
-app.listen(PORT, HOST, () => {
+app.listen(PORT, () => {
     console.log('====================================================');
-    console.log('🚀 Bem Caseiro rodando em http://' + HOST + ':' + PORT);
+    console.log('🚀 Bem Caseiro na porta ' + PORT);
     console.log('👤 Cliente: cadastro com nome + CPF');
     console.log('🔑 Admin: Willian / paesedelicias');
     console.log('====================================================');
-}).on('error', (err) => {
-    console.error('Erro ao abrir a porta:', err.message);
-    process.exit(1);
 });
