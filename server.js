@@ -219,6 +219,76 @@ app.get('/listar-clientes', exigirAdmin, (req, res) => {
     });
 });
 
+app.post('/atualizar-cliente', exigirAdmin, (req, res) => {
+    const { id, nome, cpf, telefone } = req.body || {};
+    if (!id || !nome || !cpf) {
+        return res.status(400).json({ error: 'Informe id, nome e CPF.' });
+    }
+    const cpfT = String(cpf).trim().replace(/\D/g, '') || String(cpf).trim();
+    const nomeT = String(nome).trim();
+    if (nomeT.toLowerCase() === ADMIN_USUARIO.toLowerCase()) {
+        return res.status(400).json({ error: 'Este nome de usuário é reservado.' });
+    }
+    db.run(
+        `UPDATE clientes SET nome = ?, cpf = ?, telefone = ? WHERE id = ?`,
+        [nomeT, cpfT, (telefone || '').trim(), id],
+        function (err) {
+            if (err) {
+                if (String(err.message).includes('UNIQUE')) {
+                    return res.status(400).json({ error: 'CPF já cadastrado em outro cliente.' });
+                }
+                return res.status(500).json({ error: err.message });
+            }
+            if (this.changes === 0) {
+                return res.status(404).json({ error: 'Cliente não encontrado.' });
+            }
+            res.json({ success: true });
+        }
+    );
+});
+
+app.post('/excluir-cliente', exigirAdmin, (req, res) => {
+    const id = req.body && req.body.id;
+    if (!id) {
+        return res.status(400).json({ error: 'Informe o id do cliente.' });
+    }
+    db.all(`SELECT id FROM agendamentos WHERE cliente_id = ?`, [id], (err, ags) => {
+        if (err) return res.status(500).json({ error: err.message });
+        const ids = (ags || []).map(a => a.id);
+
+        function apagarCliente() {
+            db.run(`DELETE FROM clientes WHERE id = ?`, [id], function (errDel) {
+                if (errDel) return res.status(500).json({ error: errDel.message });
+                if (this.changes === 0) {
+                    return res.status(404).json({ error: 'Cliente não encontrado.' });
+                }
+                res.json({ success: true });
+            });
+        }
+
+        if (!ids.length) {
+            return apagarCliente();
+        }
+
+        const placeholders = ids.map(() => '?').join(',');
+        db.run(
+            `DELETE FROM itens_agendamento WHERE agendamento_id IN (${placeholders})`,
+            ids,
+            (errItens) => {
+                if (errItens) return res.status(500).json({ error: errItens.message });
+                db.run(
+                    `DELETE FROM agendamentos WHERE cliente_id = ?`,
+                    [id],
+                    (errAg) => {
+                        if (errAg) return res.status(500).json({ error: errAg.message });
+                        apagarCliente();
+                    }
+                );
+            }
+        );
+    });
+});
+
 app.post('/salvar-servico', exigirAdmin, (req, res) => {
     const { descricao, preco, tempo_estimado } = req.body;
     if (!descricao || preco === undefined || tempo_estimado === undefined) {
