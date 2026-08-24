@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="estilo.css">
     <title>Bem Caseiro - Clientes</title>
+    <style>
+        .btn-editar { background: linear-gradient(135deg, var(--azul-bebe), var(--azul-escuro)) !important; padding: 8px 14px !important; font-size: 0.9rem !important; box-shadow: none !important; }
+        .btn-excluir { background: linear-gradient(135deg, #e74c3c, #c0392b) !important; padding: 8px 14px !important; font-size: 0.9rem !important; box-shadow: none !important; }
+        .btn-cancelar { background: var(--bege) !important; color: var(--texto) !important; border: 2px solid var(--bege-escuro) !important; box-shadow: none !important; padding: 14px !important; }
+        .acoes-cliente { display: flex; gap: 6px; flex-wrap: wrap; }
+        .form-botoes { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+        .form-botoes button { flex: 1; min-width: 140px; }
+    </style>
 </head>
 <body>
     <nav class="bc-nav"></nav>
@@ -15,23 +23,27 @@
     </header>
     <div class="container">
         <div class="card">
-            <h2>Novo Cliente</h2>
+            <h2 id="titulo-form">Novo Cliente</h2>
             <form id="form-cliente">
+                <input type="hidden" id="cliente-id" value="">
                 <label for="nome">Nome Completo:</label>
                 <input type="text" id="nome" required maxlength="120" placeholder="Ex: Maria Silva">
                 <label for="cpf">CPF (senha de acesso do cliente):</label>
                 <input type="text" id="cpf" required maxlength="20" placeholder="000.000.000-00">
                 <label for="telefone">Telefone:</label>
                 <input type="tel" id="telefone" maxlength="20" placeholder="(00) 99999-9999">
-                <button type="submit">Salvar Cliente</button>
+                <div class="form-botoes">
+                    <button type="submit" id="btn-salvar">Salvar Cliente</button>
+                    <button type="button" id="btn-cancelar" class="btn-cancelar" style="display:none;">Cancelar edição</button>
+                </div>
             </form>
             <div id="feedback" class="msg-feedback"></div>
         </div>
         <div class="card">
             <h2>Clientes Cadastrados</h2>
             <table>
-                <thead><tr><th>Nome</th><th>CPF</th><th>Telefone</th></tr></thead>
-                <tbody id="lista-clientes"><tr><td colspan="3" style="text-align:center;">Carregando...</td></tr></tbody>
+                <thead><tr><th>Nome</th><th>CPF</th><th>Telefone</th><th>Ações</th></tr></thead>
+                <tbody id="lista-clientes"><tr><td colspan="4" style="text-align:center;">Carregando...</td></tr></tbody>
             </table>
         </div>
     </div>
@@ -41,40 +53,118 @@
         if (!bcRequireAdmin()) throw new Error('redirect');
         bcRenderChrome('clientes');
 
+        let clientesCache = [];
+
+        function modoNovo() {
+            document.getElementById('cliente-id').value = '';
+            document.getElementById('titulo-form').textContent = 'Novo Cliente';
+            document.getElementById('btn-salvar').textContent = 'Salvar Cliente';
+            document.getElementById('btn-cancelar').style.display = 'none';
+            document.getElementById('form-cliente').reset();
+            document.getElementById('feedback').style.display = 'none';
+        }
+
+        function modoEdicao(c) {
+            document.getElementById('cliente-id').value = c.id;
+            document.getElementById('nome').value = c.nome || '';
+            document.getElementById('cpf').value = c.cpf || '';
+            document.getElementById('telefone').value = c.telefone || '';
+            document.getElementById('titulo-form').textContent = 'Editar Cliente';
+            document.getElementById('btn-salvar').textContent = 'Atualizar Cliente';
+            document.getElementById('btn-cancelar').style.display = 'block';
+            document.getElementById('feedback').style.display = 'none';
+            document.getElementById('titulo-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
         async function carregar() {
             const res = await fetch('/listar-clientes', { headers: bcAuthHeaders() });
             if (res.status === 401) return bcLogout();
-            const clientes = await res.json();
+            clientesCache = await res.json() || [];
             const corpo = document.getElementById('lista-clientes');
-            if (!clientes.length) {
-                corpo.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--texto-claro);">Nenhum cliente.</td></tr>';
+            if (!clientesCache.length) {
+                corpo.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--texto-claro);">Nenhum cliente.</td></tr>';
                 return;
             }
-            corpo.innerHTML = clientes.map(c => `
-                <tr><td><strong>${bcEscape(c.nome)}</strong></td><td>${bcEscape(c.cpf)}</td><td>${bcEscape(c.telefone || '-')}</td></tr>
+            corpo.innerHTML = clientesCache.map(c => `
+                <tr>
+                    <td><strong>${bcEscape(c.nome)}</strong></td>
+                    <td>${bcEscape(c.cpf)}</td>
+                    <td>${bcEscape(c.telefone || '-')}</td>
+                    <td>
+                        <div class="acoes-cliente">
+                            <button type="button" class="btn-editar" data-id="${c.id}">Editar</button>
+                            <button type="button" class="btn-excluir" data-id="${c.id}">Excluir</button>
+                        </div>
+                    </td>
+                </tr>
             `).join('');
+
+            document.querySelectorAll('.btn-editar').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const c = clientesCache.find(x => String(x.id) === String(btn.dataset.id));
+                    if (c) modoEdicao(c);
+                });
+            });
+            document.querySelectorAll('.btn-excluir').forEach(btn => {
+                btn.addEventListener('click', () => excluirCliente(btn.dataset.id, btn));
+            });
         }
+
+        async function excluirCliente(id, btn) {
+            const c = clientesCache.find(x => String(x.id) === String(id));
+            const nome = c ? c.nome : 'este cliente';
+            if (!confirm('Excluir o cliente "' + nome + '"?\n\nSe houver pedidos vinculados, eles também serão removidos.')) return;
+            btn.disabled = true;
+            const fb = document.getElementById('feedback');
+            try {
+                const res = await fetch('/excluir-cliente', {
+                    method: 'POST',
+                    headers: { ...bcAuthHeaders(), 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ id: Number(id) })
+                });
+                if (res.status === 401) return bcLogout();
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data.error || 'Erro ao excluir');
+                fb.className = 'msg-feedback msg-sucesso';
+                fb.textContent = 'Cliente excluído!';
+                fb.style.display = 'block';
+                if (String(document.getElementById('cliente-id').value) === String(id)) modoNovo();
+                carregar();
+            } catch (err) {
+                fb.className = 'msg-feedback msg-erro';
+                fb.textContent = err.message;
+                fb.style.display = 'block';
+                btn.disabled = false;
+            }
+        }
+
+        document.getElementById('btn-cancelar').addEventListener('click', modoNovo);
 
         document.getElementById('form-cliente').addEventListener('submit', async (e) => {
             e.preventDefault();
             const fb = document.getElementById('feedback');
+            const id = document.getElementById('cliente-id').value.trim();
             const body = {
                 nome: document.getElementById('nome').value.trim(),
                 cpf: document.getElementById('cpf').value.trim(),
                 telefone: document.getElementById('telefone').value.trim()
             };
+            if (id) body.id = Number(id);
+
             try {
-                const res = await fetch('/salvar-cliente', {
+                const url = id ? '/atualizar-cliente' : '/salvar-cliente';
+                const res = await fetch(url, {
                     method: 'POST',
                     headers: { ...bcAuthHeaders(), 'Content-Type': 'application/json', 'Accept': 'application/json' },
                     body: JSON.stringify(body)
                 });
+                if (res.status === 401) return bcLogout();
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok) throw new Error(data.error || 'Erro ao salvar');
                 fb.className = 'msg-feedback msg-sucesso';
-                fb.textContent = 'Cliente salvo!';
+                fb.textContent = id ? 'Cliente atualizado!' : 'Cliente salvo!';
                 fb.style.display = 'block';
-                e.target.reset();
+                modoNovo();
                 carregar();
             } catch (err) {
                 fb.className = 'msg-feedback msg-erro';
