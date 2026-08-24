@@ -10,6 +10,10 @@
         .item-carrinho:last-child { border-bottom:none; }
         .resumo-pedido { margin-top:16px; padding:14px; background:#F8F4EB; border-radius:12px; font-weight:600; }
         .btn-remover { background:#e74c3c !important; padding:8px 14px !important; font-size:0.9rem !important; box-shadow:none !important; }
+        .linha-add { display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; margin-bottom:12px; }
+        .linha-add label { margin:0; }
+        .linha-add select { flex:1; min-width:180px; }
+        .linha-add input[type="number"] { width:90px; }
     </style>
 </head>
 <body>
@@ -17,7 +21,7 @@
     <header class="banner">
         <img src="logo-bem-caseiro.png" alt="Bem Caseiro" style="height: 80px; width: auto; margin-bottom: 15px;">
         <h1>Novo Pedido / Reserva</h1>
-        <p>Escolha produtos e finalize</p>
+        <p>Escolha produtos, quantidades e finalize</p>
     </header>
     <div class="container">
         <div class="card">
@@ -38,9 +42,17 @@
                 <input type="text" id="responsavel" required maxlength="80" placeholder="Seu nome ou quem retira">
 
                 <h3>Produtos do Pedido</h3>
-                <label for="select-servico">Escolha um produto:</label>
-                <select id="select-servico"><option value="">Carregando...</option></select>
-                <button type="button" id="btn-add" style="background:linear-gradient(135deg,var(--azul-bebe),var(--azul-escuro)); margin-bottom:12px;">+ Adicionar</button>
+                <div class="linha-add">
+                    <div style="flex:1; min-width:180px;">
+                        <label for="select-servico">Produto:</label>
+                        <select id="select-servico"><option value="">Carregando...</option></select>
+                    </div>
+                    <div>
+                        <label for="qtd-servico">Qtd:</label>
+                        <input type="number" id="qtd-servico" min="1" max="999" value="1">
+                    </div>
+                    <button type="button" id="btn-add" style="background:linear-gradient(135deg,var(--azul-bebe),var(--azul-escuro));">+ Adicionar</button>
+                </div>
 
                 <div id="carrinho" style="border:2px dashed var(--rosa-bebe); padding:15px; border-radius:12px; min-height:80px; background:#fff;">
                     <p id="carrinho-vazio" style="color:var(--texto-claro); margin:0; text-align:center;">Nenhum item ainda.</p>
@@ -67,7 +79,7 @@
         }
 
         function atualizarResumo() {
-            const total = carrinho.reduce((s, i) => s + Number(i.preco), 0);
+            const total = carrinho.reduce((s, i) => s + Number(i.preco) * Number(i.quantidade || 1), 0);
             document.getElementById('resumo').innerHTML =
                 `Total: <strong>R$ ${formatarPreco(total)}</strong>`;
         }
@@ -80,13 +92,19 @@
                 lista.innerHTML = '';
             } else {
                 vazio.style.display = 'none';
-                lista.innerHTML = carrinho.map((item, idx) => `
+                lista.innerHTML = carrinho.map((item, idx) => {
+                    const qtd = Number(item.quantidade) || 1;
+                    const sub = Number(item.preco) * qtd;
+                    return `
                     <div class="item-carrinho">
-                        <div><strong>${bcEscape(item.descricao)}</strong><br>
-                        <small>R$ ${formatarPreco(item.preco)} · ${bcEscape(formatarQuandoFeito(item.tempo_estimado))}</small></div>
+                        <div>
+                            <strong>${bcEscape(item.descricao)}</strong>
+                            <span style="color:var(--texto-claro);"> × ${qtd}</span><br>
+                            <small>R$ ${formatarPreco(item.preco)} un. · Subtotal R$ ${formatarPreco(sub)} · ${bcEscape(formatarQuandoFeito(item.tempo_estimado))}</small>
+                        </div>
                         <button type="button" class="btn-remover" data-idx="${idx}">Remover</button>
-                    </div>
-                `).join('');
+                    </div>`;
+                }).join('');
                 lista.querySelectorAll('.btn-remover').forEach(btn => {
                     btn.addEventListener('click', () => {
                         carrinho.splice(Number(btn.dataset.idx), 1);
@@ -139,11 +157,24 @@
         document.getElementById('btn-add').addEventListener('click', () => {
             const id = document.getElementById('select-servico').value;
             if (!id) return alert('Selecione um produto.');
+            const qtd = Math.max(1, parseInt(document.getElementById('qtd-servico').value, 10) || 1);
             const s = servicos.find(x => String(x.id) === String(id));
             if (!s) return;
-            carrinho.push({ id: s.id, descricao: s.descricao, preco: s.preco, tempo_estimado: s.tempo_estimado });
+            const existente = carrinho.find(i => String(i.id) === String(s.id));
+            if (existente) {
+                existente.quantidade = (Number(existente.quantidade) || 1) + qtd;
+            } else {
+                carrinho.push({
+                    id: s.id,
+                    descricao: s.descricao,
+                    preco: s.preco,
+                    tempo_estimado: s.tempo_estimado,
+                    quantidade: qtd
+                });
+            }
             renderCarrinho();
             document.getElementById('select-servico').value = '';
+            document.getElementById('qtd-servico').value = '1';
         });
 
         document.getElementById('form-agendamento').addEventListener('submit', async (e) => {
@@ -153,8 +184,7 @@
             const data = document.getElementById('data_entrega').value;
             const responsavel = document.getElementById('responsavel').value.trim();
             let cliente_id = document.getElementById('cliente_id').value;
-
-            if (bcIsCliente()) cliente_id = sess.usuario.id;
+            if (bcIsCliente()) cliente_id = sess.usuario && sess.usuario.id;
             if (!data || !responsavel) {
                 fb.className = 'msg-feedback msg-erro';
                 fb.style.display = 'block';
@@ -174,7 +204,7 @@
                 return;
             }
 
-            const total = carrinho.reduce((s, i) => s + Number(i.preco), 0);
+            const total = carrinho.reduce((s, i) => s + Number(i.preco) * Number(i.quantidade || 1), 0);
             const tempo_total = carrinho.reduce((m, i) => Math.max(m, Number(i.tempo_estimado) || 0), 0);
             btn.disabled = true;
             btn.textContent = 'Salvando...';
@@ -189,7 +219,11 @@
                         responsavel,
                         total,
                         tempo_total,
-                        servicos: carrinho.map(i => ({ id: i.id, preco: i.preco }))
+                        servicos: carrinho.map(i => ({
+                            id: i.id,
+                            preco: i.preco,
+                            quantidade: Number(i.quantidade) || 1
+                        }))
                     })
                 });
                 const dataRes = await res.json();
