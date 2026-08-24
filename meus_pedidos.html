@@ -23,10 +23,10 @@
             <h2>Histórico</h2>
             <table>
                 <thead>
-                    <tr><th>Data</th><th>Responsável</th><th>Valor</th><th>Tempo</th><th></th></tr>
+                    <tr><th>Data</th><th>Responsável</th><th>Valor</th><th></th></tr>
                 </thead>
                 <tbody id="lista">
-                    <tr><td colspan="5" style="text-align:center;">Carregando...</td></tr>
+                    <tr><td colspan="4" style="text-align:center;">Carregando...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -57,7 +57,7 @@
             const lista = await res.json() || [];
             const corpo = document.getElementById('lista');
             if (!lista.length) {
-                corpo.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--texto-claro);">Você ainda não tem pedidos. <a href="agendamentos.html">Fazer pedido</a></td></tr>';
+                corpo.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--texto-claro);">Você ainda não tem pedidos. <a href="agendamentos.html">Fazer pedido</a></td></tr>';
                 return;
             }
             corpo.innerHTML = lista.map(a => `
@@ -65,10 +65,9 @@
                     <td>${bcEscape(formatarData(a.data))}</td>
                     <td>${bcEscape(a.responsavel)}</td>
                     <td>R$ ${formatarPreco(a.total)}</td>
-                    <td>${a.tempo_total || 0} min</td>
                     <td><button type="button" class="btn-detalhes" data-id="${a.id}">Detalhes</button></td>
                 </tr>
-                <tr class="detalhes-linha" id="detalhe-${a.id}" style="display:none;"><td colspan="5"></td></tr>
+                <tr class="detalhes-linha" id="detalhe-${a.id}" style="display:none;"><td colspan="4"></td></tr>
             `).join('');
 
             corpo.querySelectorAll('.btn-detalhes').forEach(btn => {
@@ -85,7 +84,7 @@
                     const r = await fetch('/detalhes-agendamento/' + id, { headers: bcAuthHeaders() });
                     const itens = await r.json();
                     linha.querySelector('td').innerHTML = !itens.length ? '<em>Sem itens</em>' :
-                        `<ul class="lista-itens">${itens.map(i => `<li>${bcEscape(i.descricao)} — R$ ${formatarPreco(i.preco_cobrado)}</li>`).join('')}</ul>`;
+                        `<ul class="lista-itens">${itens.map(i => `<li>${bcEscape(i.descricao)} — R$ ${formatarPreco(i.preco_cobrado)} · ${bcEscape(formatarQuandoFeito(i.tempo_estimado))}</li>`).join('')}</ul>`;
                 });
             });
         })();

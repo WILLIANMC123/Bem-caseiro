@@ -26,11 +26,11 @@
                 <thead>
                     <tr>
                         <th>Data</th><th>Cliente</th><th>Responsável</th>
-                        <th>Valor</th><th>Tempo</th><th></th>
+                        <th>Valor</th><th></th>
                     </tr>
                 </thead>
                 <tbody id="lista-agendamentos">
-                    <tr><td colspan="6" style="text-align:center;">Carregando...</td></tr>
+                    <tr><td colspan="5" style="text-align:center;">Carregando...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -55,7 +55,7 @@
         function renderTabela(lista) {
             const corpo = document.getElementById('lista-agendamentos');
             if (!lista.length) {
-                corpo.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--texto-claro);">Nenhum pedido.</td></tr>';
+                corpo.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--texto-claro);">Nenhum pedido.</td></tr>';
                 return;
             }
             corpo.innerHTML = lista.map(a => `
@@ -64,10 +64,9 @@
                     <td><strong>${bcEscape(a.nome_cliente)}</strong></td>
                     <td>${bcEscape(a.responsavel)}</td>
                     <td>R$ ${formatarPreco(a.total)}</td>
-                    <td>${a.tempo_total || 0} min</td>
                     <td><button type="button" class="btn-detalhes" data-id="${a.id}">Detalhes</button></td>
                 </tr>
-                <tr class="detalhes-linha" id="detalhe-${a.id}" style="display:none;"><td colspan="6"></td></tr>
+                <tr class="detalhes-linha" id="detalhe-${a.id}" style="display:none;"><td colspan="5"></td></tr>
             `).join('');
             corpo.querySelectorAll('.btn-detalhes').forEach(btn => {
                 btn.addEventListener('click', () => toggleDetalhes(btn.dataset.id, btn));
@@ -93,7 +92,7 @@
                     return;
                 }
                 linha.querySelector('td').innerHTML = `<strong>Itens:</strong><ul class="lista-itens">${
-                    itens.map(i => `<li>${bcEscape(i.descricao)} — R$ ${formatarPreco(i.preco_cobrado)}</li>`).join('')
+                    itens.map(i => `<li>${bcEscape(i.descricao)} — R$ ${formatarPreco(i.preco_cobrado)} · ${bcEscape(formatarQuandoFeito(i.tempo_estimado))}</li>`).join('')
                 }</ul>`;
             } catch (e) {
                 linha.querySelector('td').innerHTML = '<span style="color:#c0392b;">Erro ao carregar.</span>';
