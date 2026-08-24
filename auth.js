@@ -90,6 +90,16 @@ function bcRenderChrome(activePage) {
         `;
     }
 
+    const clientesBox = isAdmin
+        ? `<div class="bc-perfil-clientes" id="bc-perfil-clientes">
+                <div class="bc-perfil-clientes-titulo">Pessoas cadastradas</div>
+                <div class="bc-perfil-clientes-lista" id="bc-perfil-clientes-lista">
+                    <small style="color:#888;">Carregando...</small>
+                </div>
+                <a href="clientes.html" class="bc-perfil-link-clientes">Ver todos / cadastrar →</a>
+           </div>`
+        : '';
+
     const nav = document.querySelector('nav.bc-nav') || document.querySelector('nav');
     if (nav) {
         nav.classList.add('bc-nav');
@@ -106,6 +116,7 @@ function bcRenderChrome(activePage) {
                         <strong>${bcEscape(nome)}</strong>
                         <small>${isAdmin ? 'Administrador' : 'Cliente'}</small>
                     </div>
+                    ${clientesBox}
                     <button type="button" class="bc-sair" id="bc-sair">Sair da conta</button>
                 </div>
             </div>
@@ -118,6 +129,7 @@ function bcRenderChrome(activePage) {
             const open = menu.hidden;
             menu.hidden = !open;
             btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+            if (open && isAdmin) carregarClientesNoPerfil();
         });
         document.getElementById('bc-sair').addEventListener('click', bcLogout);
         document.addEventListener('click', () => {
@@ -125,6 +137,31 @@ function bcRenderChrome(activePage) {
             btn.setAttribute('aria-expanded', 'false');
         });
         menu.addEventListener('click', (e) => e.stopPropagation());
+    }
+}
+
+async function carregarClientesNoPerfil() {
+    const lista = document.getElementById('bc-perfil-clientes-lista');
+    if (!lista) return;
+    try {
+        const res = await fetch('/listar-clientes', { headers: bcAuthHeaders() });
+        if (res.status === 401) return bcLogout();
+        const clientes = await res.json() || [];
+        if (!clientes.length) {
+            lista.innerHTML = '<small style="color:#888;">Nenhum cliente cadastrado.</small>';
+            return;
+        }
+        lista.innerHTML = clientes.map(c => `
+            <div class="bc-cliente-item">
+                <strong>${bcEscape(c.nome)}</strong>
+                <div class="bc-cliente-dados">
+                    <span>CPF: ${bcEscape(c.cpf || '-')}</span>
+                    <span>Tel: ${bcEscape(c.telefone || '-')}</span>
+                </div>
+            </div>
+        `).join('');
+    } catch (e) {
+        lista.innerHTML = '<small style="color:#c0392b;">Erro ao carregar.</small>';
     }
 }
 
