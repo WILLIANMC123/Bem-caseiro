@@ -26,6 +26,7 @@
 
             <div id="feedback" class="msg-feedback"></div>
 
+            <!-- LOGIN -->
             <form id="form-entrar">
                 <h2 style="margin-top:0;">Entrar na conta</h2>
                 <p style="color:var(--texto-claro); margin-top:0;">Use seu <strong>nome</strong> e seu <strong>CPF</strong> (senha).</p>
@@ -36,6 +37,7 @@
                 <button type="submit" style="width:100%; margin-top:10px;">Entrar</button>
             </form>
 
+            <!-- CADASTRO -->
             <form id="form-cadastrar" style="display:none;">
                 <h2 style="margin-top:0;">Criar conta</h2>
                 <p style="color:var(--texto-claro); margin-top:0;">O <strong>nome</strong> será seu usuário e o <strong>CPF</strong> será sua senha.</p>
@@ -56,6 +58,7 @@
 
     <script src="auth.js"></script>
     <script>
+        // Já logado? Vai para home
         (function () {
             const s = bcGetSession();
             if (s && s.token) window.location.href = 'home.html';
