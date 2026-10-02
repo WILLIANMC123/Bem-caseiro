@@ -47,7 +47,6 @@ db.serialize(() => {
         responsavel TEXT NOT NULL,
         total REAL NOT NULL,
         tempo_total INTEGER NOT NULL,
-        entregue INTEGER DEFAULT 0,
         FOREIGN KEY (cliente_id) REFERENCES clientes (id)
     )`);
 
@@ -56,14 +55,9 @@ db.serialize(() => {
         agendamento_id INTEGER NOT NULL,
         servico_id INTEGER NOT NULL,
         preco_cobrado REAL NOT NULL,
-        quantidade INTEGER DEFAULT 1,
         FOREIGN KEY (agendamento_id) REFERENCES agendamentos (id),
         FOREIGN KEY (servico_id) REFERENCES servicos (id)
     )`);
-
-    // Migrações para bancos já existentes
-    db.run(`ALTER TABLE agendamentos ADD COLUMN entregue INTEGER DEFAULT 0`, () => {});
-    db.run(`ALTER TABLE itens_agendamento ADD COLUMN quantidade INTEGER DEFAULT 1`, () => {});
 });
 
 function extrairToken(req) {
@@ -92,6 +86,7 @@ function exigirLogado(req, res, next) {
         next();
     });
 }
+
 
 app.post('/cadastrar', (req, res) => {
     const { nome, cpf, telefone } = req.body || {};
@@ -128,6 +123,7 @@ app.post('/cadastrar', (req, res) => {
     );
 });
 
+// Login: admin (Willian / paesedelicias) ou cliente (nome + CPF)
 app.post('/login', (req, res) => {
     const { usuario, senha } = req.body || {};
     if (!usuario || !senha) {
@@ -136,6 +132,7 @@ app.post('/login', (req, res) => {
     const u = String(usuario).trim();
     const s = String(senha).trim();
 
+    // Admin
     if (u === ADMIN_USUARIO && s === ADMIN_SENHA) {
         return res.json({
             success: true,
@@ -145,6 +142,7 @@ app.post('/login', (req, res) => {
         });
     }
 
+    // Cliente: senha = CPF (com ou sem pontuação)
     const cpfNorm = s.replace(/\D/g, '') || s;
     db.all(`SELECT id, nome, cpf, telefone FROM clientes`, [], (err, rows) => {
         if (err) return res.status(500).json({ success: false, error: err.message });
@@ -188,6 +186,8 @@ app.get('/verificar-auth', (req, res) => {
     });
 });
 
+/* ========== CLIENTES (admin) ========== */
+
 app.post('/salvar-cliente', exigirAdmin, (req, res) => {
     const { nome, cpf, telefone } = req.body;
     if (!nome || !cpf) {
@@ -219,75 +219,7 @@ app.get('/listar-clientes', exigirAdmin, (req, res) => {
     });
 });
 
-app.post('/atualizar-cliente', exigirAdmin, (req, res) => {
-    const { id, nome, cpf, telefone } = req.body || {};
-    if (!id || !nome || !cpf) {
-        return res.status(400).json({ error: 'Informe id, nome e CPF.' });
-    }
-    const cpfT = String(cpf).trim().replace(/\D/g, '') || String(cpf).trim();
-    const nomeT = String(nome).trim();
-    if (nomeT.toLowerCase() === ADMIN_USUARIO.toLowerCase()) {
-        return res.status(400).json({ error: 'Este nome de usuário é reservado.' });
-    }
-    db.run(
-        `UPDATE clientes SET nome = ?, cpf = ?, telefone = ? WHERE id = ?`,
-        [nomeT, cpfT, (telefone || '').trim(), id],
-        function (err) {
-            if (err) {
-                if (String(err.message).includes('UNIQUE')) {
-                    return res.status(400).json({ error: 'CPF já cadastrado em outro cliente.' });
-                }
-                return res.status(500).json({ error: err.message });
-            }
-            if (this.changes === 0) {
-                return res.status(404).json({ error: 'Cliente não encontrado.' });
-            }
-            res.json({ success: true });
-        }
-    );
-});
-
-app.post('/excluir-cliente', exigirAdmin, (req, res) => {
-    const id = req.body && req.body.id;
-    if (!id) {
-        return res.status(400).json({ error: 'Informe o id do cliente.' });
-    }
-    db.all(`SELECT id FROM agendamentos WHERE cliente_id = ?`, [id], (err, ags) => {
-        if (err) return res.status(500).json({ error: err.message });
-        const ids = (ags || []).map(a => a.id);
-
-        function apagarCliente() {
-            db.run(`DELETE FROM clientes WHERE id = ?`, [id], function (errDel) {
-                if (errDel) return res.status(500).json({ error: errDel.message });
-                if (this.changes === 0) {
-                    return res.status(404).json({ error: 'Cliente não encontrado.' });
-                }
-                res.json({ success: true });
-            });
-        }
-
-        if (!ids.length) {
-            return apagarCliente();
-        }
-
-        const placeholders = ids.map(() => '?').join(',');
-        db.run(
-            `DELETE FROM itens_agendamento WHERE agendamento_id IN (${placeholders})`,
-            ids,
-            (errItens) => {
-                if (errItens) return res.status(500).json({ error: errItens.message });
-                db.run(
-                    `DELETE FROM agendamentos WHERE cliente_id = ?`,
-                    [id],
-                    (errAg) => {
-                        if (errAg) return res.status(500).json({ error: errAg.message });
-                        apagarCliente();
-                    }
-                );
-            }
-        );
-    });
-});
+/* ========== SERVIÇOS ========== */
 
 app.post('/salvar-servico', exigirAdmin, (req, res) => {
     const { descricao, preco, tempo_estimado } = req.body;
@@ -297,7 +229,7 @@ app.post('/salvar-servico', exigirAdmin, (req, res) => {
     const precoNum = parseFloat(preco);
     const tempoNum = parseInt(tempo_estimado, 10);
     if (isNaN(precoNum) || precoNum < 0 || isNaN(tempoNum) || tempoNum < 0) {
-        return res.status(400).send('Preço e tempo inválidos.');
+        return res.status(400).send('Preço ou informação de quando foi feito inválidos.');
     }
     db.run(
         `INSERT INTO servicos (descricao, preco, tempo_estimado) VALUES (?, ?, ?)`,
@@ -309,6 +241,7 @@ app.post('/salvar-servico', exigirAdmin, (req, res) => {
     );
 });
 
+// Lista de serviços: logado (cliente ou admin)
 app.get('/listar-servicos', exigirLogado, (req, res) => {
     db.all(`SELECT * FROM servicos ORDER BY descricao ASC`, [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -316,9 +249,12 @@ app.get('/listar-servicos', exigirLogado, (req, res) => {
     });
 });
 
+/* ========== AGENDAMENTOS ========== */
+
 app.post('/finalizar-agendamento', exigirLogado, (req, res) => {
     let { cliente_id, data, responsavel, total, tempo_total, servicos } = req.body;
 
+    // Cliente só pode agendar para si
     if (req.user.tipo === 'cliente') {
         cliente_id = req.user.id;
         responsavel = responsavel || req.user.nome;
@@ -335,20 +271,18 @@ app.post('/finalizar-agendamento', exigirLogado, (req, res) => {
     }
 
     db.run(
-        `INSERT INTO agendamentos (cliente_id, data, responsavel, total, tempo_total, entregue) VALUES (?, ?, ?, ?, ?, 0)`,
+        `INSERT INTO agendamentos (cliente_id, data, responsavel, total, tempo_total) VALUES (?, ?, ?, ?, ?)`,
         [cliente_id, data, String(responsavel).trim(), totalNum, tempoNum],
         function (err) {
             if (err) return res.status(500).json({ success: false, error: err.message });
             const agendamentoId = this.lastID;
             const stmt = db.prepare(
-                `INSERT INTO itens_agendamento (agendamento_id, servico_id, preco_cobrado, quantidade) VALUES (?, ?, ?, ?)`
+                `INSERT INTO itens_agendamento (agendamento_id, servico_id, preco_cobrado) VALUES (?, ?, ?)`
             );
             let erroDetalhe = null;
             servicos.forEach((item) => {
                 if (erroDetalhe) return;
-                const qtd = Math.max(1, parseInt(item.quantidade, 10) || 1);
-                const precoUnit = parseFloat(item.preco) || 0;
-                stmt.run(agendamentoId, item.id, precoUnit, qtd, (errRun) => {
+                stmt.run(agendamentoId, item.id, item.preco, (errRun) => {
                     if (errRun) erroDetalhe = errRun;
                 });
             });
@@ -365,30 +299,30 @@ app.post('/finalizar-agendamento', exigirLogado, (req, res) => {
     );
 });
 
+// Admin: todos os pedidos
 app.get('/listar-agendamentos', exigirAdmin, (req, res) => {
     const sql = `
-        SELECT a.id, a.data, a.responsavel, a.total, a.tempo_total,
-               COALESCE(a.entregue, 0) as entregue, c.nome as nome_cliente
+        SELECT a.id, a.data, a.responsavel, a.total, a.tempo_total, c.nome as nome_cliente
         FROM agendamentos a
         INNER JOIN clientes c ON a.cliente_id = c.id
-        ORDER BY COALESCE(a.entregue, 0) ASC, a.id DESC`;
+        ORDER BY a.id DESC`;
     db.all(sql, [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(rows);
     });
 });
 
+// Cliente: só os próprios
 app.get('/meus-agendamentos', exigirLogado, (req, res) => {
     if (req.user.tipo !== 'cliente') {
         return res.status(403).json({ error: 'Rota apenas para clientes.' });
     }
     const sql = `
-        SELECT a.id, a.data, a.responsavel, a.total, a.tempo_total,
-               COALESCE(a.entregue, 0) as entregue, c.nome as nome_cliente
+        SELECT a.id, a.data, a.responsavel, a.total, a.tempo_total, c.nome as nome_cliente
         FROM agendamentos a
         INNER JOIN clientes c ON a.cliente_id = c.id
         WHERE a.cliente_id = ?
-        ORDER BY COALESCE(a.entregue, 0) ASC, a.id DESC`;
+        ORDER BY a.id DESC`;
     db.all(sql, [req.user.id], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(rows);
@@ -398,7 +332,7 @@ app.get('/meus-agendamentos', exigirLogado, (req, res) => {
 app.get('/detalhes-agendamento/:id', exigirLogado, (req, res) => {
     const { id } = req.params;
     const sqlItens = `
-        SELECT i.preco_cobrado, COALESCE(i.quantidade, 1) as quantidade, s.descricao, s.tempo_estimado
+        SELECT i.preco_cobrado, s.descricao, s.tempo_estimado
         FROM itens_agendamento i
         INNER JOIN servicos s ON i.servico_id = s.id
         WHERE i.agendamento_id = ?`;
@@ -410,6 +344,7 @@ app.get('/detalhes-agendamento/:id', exigirLogado, (req, res) => {
         });
     }
 
+    // Cliente: só se o pedido for dele
     db.get(`SELECT cliente_id FROM agendamentos WHERE id = ?`, [id], (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
         if (!row || row.cliente_id !== req.user.id) {
@@ -420,22 +355,6 @@ app.get('/detalhes-agendamento/:id', exigirLogado, (req, res) => {
             res.json(rows);
         });
     });
-});
-
-app.post('/marcar-entregue/:id', exigirAdmin, (req, res) => {
-    const { id } = req.params;
-    const entregue = req.body && req.body.entregue === 0 ? 0 : 1;
-    db.run(
-        `UPDATE agendamentos SET entregue = ? WHERE id = ?`,
-        [entregue, id],
-        function (err) {
-            if (err) return res.status(500).json({ success: false, error: err.message });
-            if (this.changes === 0) {
-                return res.status(404).json({ success: false, error: 'Pedido não encontrado.' });
-            }
-            res.json({ success: true, entregue });
-        }
-    );
 });
 
 const PORT = process.env.PORT || 3000;
