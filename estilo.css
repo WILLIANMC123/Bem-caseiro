@@ -13,7 +13,12 @@
     --sombra: rgba(129, 207, 255, 0.25);
 }
 
-* { box-sizing: border-box; }
+/* ==========================================================================
+   ESTRUTURA GERAL
+   ========================================================================== */
+* {
+    box-sizing: border-box;
+}
 
 body {
     font-family: 'Segoe UI', system-ui, sans-serif;
@@ -33,6 +38,9 @@ body {
     width: 100%;
 }
 
+/* ==========================================================================
+   NAVEGAÇÃO
+   ========================================================================== */
 nav {
     background: linear-gradient(135deg, var(--azul-escuro), var(--azul-bebe));
     padding: 1.1rem 0;
@@ -60,6 +68,9 @@ nav a:hover {
     transform: translateY(-4px);
 }
 
+/* ==========================================================================
+   BANNER
+   ========================================================================== */
 .banner {
     background: linear-gradient(135deg, var(--azul-bebe), var(--azul-escuro));
     color: white;
@@ -83,6 +94,9 @@ nav a:hover {
     opacity: 0.95;
 }
 
+/* ==========================================================================
+   CARDS
+   ========================================================================== */
 .card {
     background: var(--branco);
     padding: 2.3rem;
@@ -98,8 +112,13 @@ nav a:hover {
     box-shadow: 0 18px 35px rgba(129, 207, 255, 0.25);
 }
 
-.card h1, .card h2, .card h3 { color: var(--azul-escuro); }
+.card h1, .card h2, .card h3 {
+    color: var(--azul-escuro);
+}
 
+/* ==========================================================================
+   FORMULÁRIOS E BOTÕES
+   ========================================================================== */
 input, select {
     width: 100%;
     padding: 14px 16px;
@@ -142,6 +161,9 @@ button:disabled {
     transform: none;
 }
 
+/* ==========================================================================
+   TABELAS
+   ========================================================================== */
 table {
     width: 100%;
     border-collapse: collapse;
@@ -162,8 +184,13 @@ th, td {
     border-bottom: 1px solid #eee;
 }
 
-tbody tr:hover { background-color: #F8F4EB; }
+tbody tr:hover {
+    background-color: #F8F4EB;
+}
 
+/* ==========================================================================
+   RODAPÉ
+   ========================================================================== */
 .rodape {
     background: var(--azul-escuro);
     color: #E0F0FF;
@@ -173,7 +200,10 @@ tbody tr:hover { background-color: #F8F4EB; }
     border-top: 6px solid var(--rosa-bebe);
 }
 
-h1, h2, h3 { font-weight: 700; }
+/* Pequenos ajustes visuais */
+h1, h2, h3 {
+    font-weight: 700;
+}
 
 label {
     font-weight: 600;
@@ -182,16 +212,36 @@ label {
     margin: 8px 0 4px;
 }
 
+/* Responsivo */
 @media (max-width: 768px) {
-    .banner { padding: 50px 16px; }
-    .banner h1 { font-size: 2.2rem; }
-    .banner p { font-size: 1.1rem; }
-    .card { padding: 1.5rem; }
-    nav a { padding: 10px 16px; font-size: 0.95rem; }
-    th, td { padding: 10px 8px; font-size: 0.95rem; }
-    .container { padding: 1.5rem 1rem; }
+    .banner {
+        padding: 50px 16px;
+    }
+    .banner h1 {
+        font-size: 2.2rem;
+    }
+    .banner p {
+        font-size: 1.1rem;
+    }
+    .card {
+        padding: 1.5rem;
+    }
+    nav a {
+        padding: 10px 16px;
+        font-size: 0.95rem;
+    }
+    th, td {
+        padding: 10px 8px;
+        font-size: 0.95rem;
+    }
+    .container {
+        padding: 1.5rem 1rem;
+    }
 }
 
+/* ==========================================================================
+   NAV + PERFIL (canto superior direito)
+   ========================================================================== */
 nav.bc-nav {
     display: flex;
     justify-content: space-between;
@@ -209,9 +259,14 @@ nav.bc-nav {
     flex: 1;
 }
 
-nav.bc-nav a.ativo { background: rgba(255,255,255,0.35); }
+nav.bc-nav a.ativo {
+    background: rgba(255,255,255,0.35);
+}
 
-.bc-perfil-wrap { position: relative; margin-left: auto; }
+.bc-perfil-wrap {
+    position: relative;
+    margin-left: auto;
+}
 
 .bc-perfil-btn {
     display: flex;
@@ -270,8 +325,14 @@ nav.bc-nav a.ativo { background: rgba(255,255,255,0.35); }
     margin-bottom: 10px;
 }
 
-.bc-perfil-info strong { display: block; color: var(--azul-escuro); }
-.bc-perfil-info small { color: var(--texto-claro); }
+.bc-perfil-info strong {
+    display: block;
+    color: var(--azul-escuro);
+}
+
+.bc-perfil-info small {
+    color: var(--texto-claro);
+}
 
 .bc-sair {
     width: 100%;
@@ -281,9 +342,15 @@ nav.bc-nav a.ativo { background: rgba(255,255,255,0.35); }
     font-size: 0.95rem !important;
 }
 
-.bc-sair:hover { transform: none !important; }
+.bc-sair:hover {
+    transform: none !important;
+}
 
-.auth-tabs { display: flex; gap: 8px; margin-bottom: 18px; }
+.auth-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 18px;
+}
 
 .auth-tabs button {
     flex: 1;
@@ -299,7 +366,9 @@ nav.bc-nav a.ativo { background: rgba(255,255,255,0.35); }
     border-color: transparent !important;
 }
 
-.auth-tabs button:hover { transform: none !important; }
+.auth-tabs button:hover {
+    transform: none !important;
+}
 
 .msg-feedback {
     padding: 12px 16px;
@@ -314,59 +383,4 @@ nav.bc-nav a.ativo { background: rgba(255,255,255,0.35); }
     .bc-perfil-nome { display: none; }
     nav.bc-nav { justify-content: center; }
     .bc-perfil-wrap { margin-left: 0; width: 100%; display: flex; justify-content: center; }
-}
-
-/* Clientes no menu de perfil (admin) — só acréscimo, sem mudar o tema */
-.bc-perfil-clientes {
-    border-top: 1px solid #eee;
-    border-bottom: 1px solid #eee;
-    padding: 10px 0;
-    margin: 8px 0;
-    max-height: 260px;
-    overflow-y: auto;
-}
-.bc-perfil-clientes-titulo {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--texto-claro);
-    margin-bottom: 8px;
-    font-weight: 600;
-}
-.bc-perfil-clientes-lista {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-.bc-cliente-item {
-    padding: 8px 10px;
-    background: #F8F4EB;
-    border-radius: 10px;
-    font-size: 0.9rem;
-}
-.bc-cliente-item strong {
-    display: block;
-    margin-bottom: 2px;
-}
-.bc-cliente-dados {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    font-size: 0.8rem;
-    color: var(--texto-claro);
-}
-.bc-perfil-link-clientes {
-    display: block;
-    margin-top: 10px;
-    font-size: 0.85rem;
-    color: var(--azul-escuro);
-    text-decoration: none;
-    font-weight: 600;
-}
-.bc-perfil-link-clientes:hover {
-    text-decoration: underline;
-}
-.bc-perfil-menu {
-    min-width: 260px;
-    max-width: 320px;
 }
