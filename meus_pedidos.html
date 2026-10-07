@@ -7,7 +7,9 @@
     <title>Bem Caseiro - Meus Pedidos</title>
     <style>
         .detalhes-linha td { background:#F8F4EB; font-size:0.95rem; }
-        .btn-detalhes { background:linear-gradient(135deg,var(--azul-bebe),var(--azul-escuro)) !important; padding:8px 14px !important; font-size:0.9rem !important; box-shadow:none !important; }
+        .btn-detalhes { background:linear-gradient(135deg,var(--azul-bebe),var(--azul-escuro)) !important; padding:8px 14px !important; font-size:0.9rem !important; box-shadow:none !important; min-height:auto !important; width:auto !important; }
+        .btn-editar { background:linear-gradient(135deg,var(--rosa-bebe),#FF7CA8) !important; padding:8px 14px !important; font-size:0.9rem !important; box-shadow:none !important; min-height:auto !important; width:auto !important; }
+        .acoes-pedido { display:flex; gap:8px; flex-wrap:wrap; }
         .lista-itens { margin:0; padding-left:18px; }
     </style>
 </head>
@@ -65,10 +67,21 @@
                     <td>${bcEscape(formatarData(a.data))}</td>
                     <td>${bcEscape(a.responsavel)}</td>
                     <td>R$ ${formatarPreco(a.total)}</td>
-                    <td><button type="button" class="btn-detalhes" data-id="${a.id}">Detalhes</button></td>
+                    <td>
+                        <div class="acoes-pedido">
+                            <button type="button" class="btn-detalhes" data-id="${a.id}">Detalhes</button>
+                            <button type="button" class="btn-editar" data-id="${a.id}">Editar</button>
+                        </div>
+                    </td>
                 </tr>
                 <tr class="detalhes-linha" id="detalhe-${a.id}" style="display:none;"><td colspan="4"></td></tr>
             `).join('');
+
+            corpo.querySelectorAll('.btn-editar').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    window.location.href = 'agendamentos.html?edit=' + btn.dataset.id;
+                });
+            });
 
             corpo.querySelectorAll('.btn-detalhes').forEach(btn => {
                 btn.addEventListener('click', async () => {
