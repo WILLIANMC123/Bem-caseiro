@@ -9,19 +9,20 @@
         .item-carrinho { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border-bottom:1px solid #eee; gap:10px; flex-wrap:wrap; }
         .item-carrinho:last-child { border-bottom:none; }
         .resumo-pedido { margin-top:16px; padding:14px; background:#F8F4EB; border-radius:12px; font-weight:600; }
-        .btn-remover { background:#e74c3c !important; padding:8px 14px !important; font-size:0.9rem !important; box-shadow:none !important; }
+        .btn-remover { background:#e74c3c !important; padding:8px 14px !important; font-size:0.9rem !important; box-shadow:none !important; min-height:auto !important; width:auto !important; }
+        .btn-cancelar-edit { background:#6c757d !important; box-shadow:none !important; margin-top:10px; }
     </style>
 </head>
 <body>
     <nav class="bc-nav"></nav>
     <header class="banner">
         <img src="logo-bem-caseiro.png" alt="Bem Caseiro" style="height: 80px; width: auto; margin-bottom: 15px;">
-        <h1>Novo Pedido / Reserva</h1>
-        <p>Escolha produtos e finalize</p>
+        <h1 id="titulo-pagina">Novo Pedido / Reserva</h1>
+        <p id="subtitulo-pagina">Escolha produtos e finalize</p>
     </header>
     <div class="container">
         <div class="card">
-            <h2>Dados do Pedido</h2>
+            <h2 id="titulo-form">Dados do Pedido</h2>
             <form id="form-agendamento">
                 <div id="wrap-cliente">
                     <label for="cliente_id">Cliente:</label>
@@ -49,6 +50,7 @@
                 <div class="resumo-pedido" id="resumo">Total: R$ 0,00</div>
                 <div id="feedback" class="msg-feedback"></div>
                 <button type="submit" id="btn-finalizar" style="width:100%; margin-top:15px;">Finalizar Pedido</button>
+                <button type="button" id="btn-cancelar-edit" class="btn-cancelar-edit" style="width:100%; display:none;">Cancelar edição</button>
             </form>
         </div>
     </div>
@@ -61,6 +63,9 @@
 
         let servicos = [];
         let carrinho = [];
+        const params = new URLSearchParams(window.location.search);
+        const editId = params.get('edit');
+        let modoEdicao = !!editId;
 
         function formatarPreco(v) {
             return Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -125,14 +130,53 @@
             });
         }
 
+        async function carregarPedidoEdicao(id) {
+            const res = await fetch('/agendamento-completo/' + id, { headers: bcAuthHeaders() });
+            if (res.status === 401) return bcLogout();
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                alert(err.error || 'Não foi possível carregar o pedido.');
+                window.location.href = bcIsAdmin() ? 'consulta_agendamentos.html' : 'meus_pedidos.html';
+                return;
+            }
+            const pedido = await res.json();
+            document.getElementById('titulo-pagina').textContent = 'Editar Pedido';
+            document.getElementById('subtitulo-pagina').textContent = 'Altere data, produtos ou responsável e salve';
+            document.getElementById('titulo-form').textContent = 'Editando pedido #' + pedido.id;
+            document.getElementById('btn-finalizar').textContent = 'Salvar alterações';
+            document.getElementById('btn-cancelar-edit').style.display = 'block';
+
+            document.getElementById('data_entrega').value = pedido.data || '';
+            document.getElementById('responsavel').value = pedido.responsavel || '';
+
+            if (bcIsAdmin()) {
+                await carregarClientesAdmin();
+                document.getElementById('cliente_id').value = String(pedido.cliente_id);
+                document.getElementById('cliente_id').disabled = true;
+            } else {
+                document.getElementById('info-cliente').textContent =
+                    'Pedido em nome de: ' + (pedido.nome_cliente || (sess.usuario && sess.usuario.nome));
+            }
+
+            carrinho = (pedido.itens || []).map(i => ({
+                id: i.id,
+                descricao: i.descricao,
+                preco: i.preco,
+                tempo_estimado: i.tempo_estimado
+            }));
+            renderCarrinho();
+        }
+
         if (bcIsCliente()) {
             document.getElementById('wrap-cliente').style.display = 'none';
             document.getElementById('cliente_id').required = false;
             document.getElementById('info-cliente').style.display = 'block';
-            document.getElementById('info-cliente').textContent =
-                'Pedido em nome de: ' + (sess.usuario && sess.usuario.nome);
-            document.getElementById('responsavel').value = (sess.usuario && sess.usuario.nome) || '';
-        } else {
+            if (!modoEdicao) {
+                document.getElementById('info-cliente').textContent =
+                    'Pedido em nome de: ' + (sess.usuario && sess.usuario.nome);
+                document.getElementById('responsavel').value = (sess.usuario && sess.usuario.nome) || '';
+            }
+        } else if (!modoEdicao) {
             carregarClientesAdmin();
         }
 
@@ -144,6 +188,10 @@
             carrinho.push({ id: s.id, descricao: s.descricao, preco: s.preco, tempo_estimado: s.tempo_estimado });
             renderCarrinho();
             document.getElementById('select-servico').value = '';
+        });
+
+        document.getElementById('btn-cancelar-edit').addEventListener('click', () => {
+            window.location.href = bcIsAdmin() ? 'consulta_agendamentos.html' : 'meus_pedidos.html';
         });
 
         document.getElementById('form-agendamento').addEventListener('submit', async (e) => {
@@ -161,7 +209,7 @@
                 fb.textContent = 'Preencha data e responsável.';
                 return;
             }
-            if (!cliente_id) {
+            if (!modoEdicao && !cliente_id) {
                 fb.className = 'msg-feedback msg-erro';
                 fb.style.display = 'block';
                 fb.textContent = 'Selecione o cliente.';
@@ -175,29 +223,43 @@
             }
 
             const total = carrinho.reduce((s, i) => s + Number(i.preco), 0);
-            // Guarda o maior "dias desde feito" dos itens (só para compatibilidade no banco)
             const tempo_total = carrinho.reduce((m, i) => Math.max(m, Number(i.tempo_estimado) || 0), 0);
             btn.disabled = true;
             btn.textContent = 'Salvando...';
 
             try {
-                const res = await fetch('/finalizar-agendamento', {
-                    method: 'POST',
-                    headers: { ...bcAuthHeaders(), 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        cliente_id: Number(cliente_id),
-                        data,
-                        responsavel,
-                        total,
-                        tempo_total,
-                        servicos: carrinho.map(i => ({ id: i.id, preco: i.preco }))
-                    })
-                });
+                let res;
+                if (modoEdicao) {
+                    res = await fetch('/editar-agendamento/' + editId, {
+                        method: 'PUT',
+                        headers: { ...bcAuthHeaders(), 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            data,
+                            responsavel,
+                            total,
+                            tempo_total,
+                            servicos: carrinho.map(i => ({ id: i.id, preco: i.preco }))
+                        })
+                    });
+                } else {
+                    res = await fetch('/finalizar-agendamento', {
+                        method: 'POST',
+                        headers: { ...bcAuthHeaders(), 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            cliente_id: Number(cliente_id),
+                            data,
+                            responsavel,
+                            total,
+                            tempo_total,
+                            servicos: carrinho.map(i => ({ id: i.id, preco: i.preco }))
+                        })
+                    });
+                }
                 const dataRes = await res.json();
                 if (!dataRes.success) throw new Error(dataRes.error || 'Erro');
                 fb.className = 'msg-feedback msg-sucesso';
                 fb.style.display = 'block';
-                fb.textContent = 'Pedido realizado com sucesso!';
+                fb.textContent = modoEdicao ? 'Pedido atualizado com sucesso!' : 'Pedido realizado com sucesso!';
                 setTimeout(() => {
                     window.location.href = bcIsAdmin() ? 'consulta_agendamentos.html' : 'meus_pedidos.html';
                 }, 1000);
@@ -206,13 +268,20 @@
                 fb.style.display = 'block';
                 fb.textContent = err.message;
                 btn.disabled = false;
-                btn.textContent = 'Finalizar Pedido';
+                btn.textContent = modoEdicao ? 'Salvar alterações' : 'Finalizar Pedido';
             }
         });
 
         document.getElementById('data_entrega').min = new Date().toISOString().split('T')[0];
-        carregarServicos();
-        renderCarrinho();
+
+        (async () => {
+            await carregarServicos();
+            if (modoEdicao) {
+                await carregarPedidoEdicao(editId);
+            } else {
+                renderCarrinho();
+            }
+        })();
     </script>
 </body>
 </html>
