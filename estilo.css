@@ -20,14 +20,19 @@
     box-sizing: border-box;
 }
 
+html {
+    -webkit-text-size-adjust: 100%;
+}
+
 body {
-    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     margin: 0;
     background: linear-gradient(135deg, var(--bege) 0%, #FAF4EB 100%);
     color: var(--texto);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    overflow-x: hidden;
 }
 
 .container {
@@ -61,6 +66,7 @@ nav a {
     padding: 12px 24px;
     border-radius: 50px;
     transition: all 0.3s ease;
+    white-space: nowrap;
 }
 
 nav a:hover {
@@ -86,12 +92,18 @@ nav a:hover {
     margin: 0;
     font-weight: 800;
     text-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    word-wrap: break-word;
 }
 
 .banner p {
     font-size: 1.4rem;
     margin: 15px 0 0;
     opacity: 0.95;
+}
+
+.banner img {
+    max-width: 100%;
+    height: auto;
 }
 
 /* ==========================================================================
@@ -107,19 +119,22 @@ nav a:hover {
     transition: all 0.4s ease;
 }
 
-.card:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 18px 35px rgba(129, 207, 255, 0.25);
+@media (hover: hover) {
+    .card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 18px 35px rgba(129, 207, 255, 0.25);
+    }
 }
 
 .card h1, .card h2, .card h3 {
     color: var(--azul-escuro);
+    word-wrap: break-word;
 }
 
 /* ==========================================================================
    FORMULÁRIOS E BOTÕES
    ========================================================================== */
-input, select {
+input, select, textarea {
     width: 100%;
     padding: 14px 16px;
     margin: 10px 0;
@@ -128,9 +143,11 @@ input, select {
     font-size: 1.05rem;
     transition: all 0.3s;
     background: #fff;
+    /* evita zoom automático no iOS */
+    font-size: max(16px, 1.05rem);
 }
 
-input:focus, select:focus {
+input:focus, select:focus, textarea:focus {
     outline: none;
     border-color: var(--azul-bebe);
     box-shadow: 0 0 0 4px rgba(129, 207, 255, 0.3);
@@ -147,6 +164,9 @@ button, button[type="submit"] {
     font-size: 1.1rem;
     transition: all 0.3s ease;
     box-shadow: 0 6px 18px rgba(255, 158, 190, 0.4);
+    /* área de toque confortável */
+    min-height: 48px;
+    -webkit-tap-highlight-color: transparent;
 }
 
 button:hover {
@@ -164,6 +184,14 @@ button:disabled {
 /* ==========================================================================
    TABELAS
    ========================================================================== */
+.table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -4px;
+    padding: 0 4px;
+}
+
 table {
     width: 100%;
     border-collapse: collapse;
@@ -171,6 +199,7 @@ table {
     border-radius: 16px;
     overflow: hidden;
     box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    min-width: 480px;
 }
 
 thead tr {
@@ -212,33 +241,6 @@ label {
     margin: 8px 0 4px;
 }
 
-/* Responsivo */
-@media (max-width: 768px) {
-    .banner {
-        padding: 50px 16px;
-    }
-    .banner h1 {
-        font-size: 2.2rem;
-    }
-    .banner p {
-        font-size: 1.1rem;
-    }
-    .card {
-        padding: 1.5rem;
-    }
-    nav a {
-        padding: 10px 16px;
-        font-size: 0.95rem;
-    }
-    th, td {
-        padding: 10px 8px;
-        font-size: 0.95rem;
-    }
-    .container {
-        padding: 1.5rem 1rem;
-    }
-}
-
 /* ==========================================================================
    NAV + PERFIL (canto superior direito)
    ========================================================================== */
@@ -278,6 +280,7 @@ nav.bc-nav a.ativo {
     font-size: 0.95rem !important;
     border-radius: 50px !important;
     transform: none !important;
+    min-height: 44px;
 }
 
 .bc-perfil-btn:hover {
@@ -379,8 +382,137 @@ nav.bc-nav a.ativo {
 .msg-erro { background: #f8d7da; color: #721c24; }
 .msg-sucesso { background: #d4edda; color: #155724; }
 
+/* ==========================================================================
+   RESPONSIVO — TABLET
+   ========================================================================== */
+@media (max-width: 768px) {
+    .banner {
+        padding: 40px 16px;
+    }
+    .banner h1 {
+        font-size: 2rem;
+    }
+    .banner p {
+        font-size: 1.05rem;
+    }
+    .banner img {
+        height: 70px !important;
+        max-height: 70px;
+    }
+    .card {
+        padding: 1.25rem;
+        border-left-width: 5px;
+        border-radius: 16px;
+        margin-bottom: 20px;
+    }
+    nav a {
+        padding: 9px 14px;
+        font-size: 0.9rem;
+    }
+    th, td {
+        padding: 10px 8px;
+        font-size: 0.9rem;
+    }
+    .container {
+        padding: 1.25rem 0.9rem;
+    }
+    .rodape {
+        padding: 24px 12px;
+        font-size: 0.95rem;
+    }
+    nav.bc-nav {
+        padding: 0.7rem 0.8rem;
+        gap: 8px;
+    }
+    .bc-nav-links {
+        gap: 6px;
+    }
+}
+
+/* ==========================================================================
+   RESPONSIVO — CELULAR
+   ========================================================================== */
 @media (max-width: 640px) {
     .bc-perfil-nome { display: none; }
-    nav.bc-nav { justify-content: center; }
-    .bc-perfil-wrap { margin-left: 0; width: 100%; display: flex; justify-content: center; }
+    nav.bc-nav {
+        justify-content: center;
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .bc-perfil-wrap {
+        margin-left: 0;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+    .bc-perfil-menu {
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+    }
+    .bc-nav-links {
+        justify-content: center;
+        width: 100%;
+    }
+    .banner h1 {
+        font-size: 1.7rem;
+    }
+    .banner p {
+        font-size: 0.98rem;
+    }
+    .banner img {
+        height: 60px !important;
+        max-height: 60px;
+    }
+    .card {
+        padding: 1rem;
+    }
+    .card h1, .card h2 {
+        font-size: 1.25rem;
+    }
+    input, select, textarea, button {
+        font-size: 16px; /* evita zoom no iOS */
+    }
+    button, button[type="submit"] {
+        width: 100%;
+        padding: 14px 12px;
+    }
+    /* botões inline (ex: adicionar produto) não precisam 100% se tiverem estilo próprio */
+    button.btn-inline {
+        width: auto;
+    }
+}
+
+@media (max-width: 480px) {
+    .banner {
+        padding: 28px 12px;
+    }
+    .banner h1 {
+        font-size: 1.45rem;
+    }
+    nav a {
+        padding: 8px 11px;
+        font-size: 0.82rem;
+    }
+    .container {
+        padding: 1rem 0.7rem;
+    }
+    th, td {
+        padding: 8px 6px;
+        font-size: 0.85rem;
+    }
+    table {
+        min-width: 420px;
+    }
+}
+
+/* Tabelas: rolagem horizontal no mobile (mantém layout da tabela) */
+@media (max-width: 768px) {
+    .card {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    table {
+        min-width: 480px;
+    }
 }
