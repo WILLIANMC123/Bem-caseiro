@@ -87,62 +87,32 @@ function exigirLogado(req, res, next) {
     });
 }
 
-
 app.post('/cadastrar', (req, res) => {
     const { nome, cpf, telefone } = req.body || {};
-    if (!nome || !cpf) {
-        return res.status(400).json({ success: false, error: 'Informe nome e CPF.' });
-    }
+    if (!nome || !cpf) return res.status(400).json({ success: false, error: 'Informe nome e CPF.' });
     const nomeT = String(nome).trim();
     const cpfT = String(cpf).trim().replace(/\D/g, '') || String(cpf).trim();
     const telT = telefone ? String(telefone).trim() : '';
-
-    if (nomeT.toLowerCase() === ADMIN_USUARIO.toLowerCase()) {
-        return res.status(400).json({ success: false, error: 'Este nome de usuário é reservado.' });
-    }
-
-    db.run(
-        `INSERT INTO clientes (nome, cpf, telefone) VALUES (?, ?, ?)`,
-        [nomeT, cpfT, telT],
-        function (err) {
-            if (err) {
-                if (String(err.message).includes('UNIQUE')) {
-                    return res.status(400).json({ success: false, error: 'Já existe um cliente com este CPF. Faça login.' });
-                }
-                return res.status(500).json({ success: false, error: err.message });
-            }
-            const id = this.lastID;
-            const token = tokenCliente(id, cpfT);
-            res.json({
-                success: true,
-                tipo: 'cliente',
-                token,
-                usuario: { id, nome: nomeT, cpf: cpfT, telefone: telT }
-            });
+    if (nomeT.toLowerCase() === ADMIN_USUARIO.toLowerCase()) return res.status(400).json({ success: false, error: 'Este nome de usuário é reservado.' });
+    db.run(`INSERT INTO clientes (nome, cpf, telefone) VALUES (?, ?, ?)`, [nomeT, cpfT, telT], function (err) {
+        if (err) {
+            if (String(err.message).includes('UNIQUE')) return res.status(400).json({ success: false, error: 'Já existe um cliente com este CPF. Faça login.' });
+            return res.status(500).json({ success: false, error: err.message });
         }
-    );
+        const id = this.lastID;
+        const token = tokenCliente(id, cpfT);
+        res.json({ success: true, tipo: 'cliente', token, usuario: { id, nome: nomeT, cpf: cpfT, telefone: telT } });
+    });
 });
 
-// Login: admin (Willian / paesedelicias) ou cliente (nome + CPF)
 app.post('/login', (req, res) => {
     const { usuario, senha } = req.body || {};
-    if (!usuario || !senha) {
-        return res.status(400).json({ success: false, error: 'Informe usuário e senha.' });
-    }
+    if (!usuario || !senha) return res.status(400).json({ success: false, error: 'Informe usuário e senha.' });
     const u = String(usuario).trim();
     const s = String(senha).trim();
-
-    // Admin
     if (u === ADMIN_USUARIO && s === ADMIN_SENHA) {
-        return res.json({
-            success: true,
-            tipo: 'admin',
-            token: ADMIN_TOKEN,
-            usuario: { nome: ADMIN_USUARIO }
-        });
+        return res.json({ success: true, tipo: 'admin', token: ADMIN_TOKEN, usuario: { nome: ADMIN_USUARIO } });
     }
-
-    // Cliente: senha = CPF (com ou sem pontuação)
     const cpfNorm = s.replace(/\D/g, '') || s;
     db.all(`SELECT id, nome, cpf, telefone FROM clientes`, [], (err, rows) => {
         if (err) return res.status(500).json({ success: false, error: err.message });
@@ -150,66 +120,36 @@ app.post('/login', (req, res) => {
             const cpfDb = String(c.cpf).replace(/\D/g, '') || c.cpf;
             return c.nome.toLowerCase() === u.toLowerCase() && (c.cpf === s || cpfDb === cpfNorm);
         });
-        if (!cliente) {
-            return res.status(401).json({ success: false, error: 'Nome ou CPF incorretos.' });
-        }
+        if (!cliente) return res.status(401).json({ success: false, error: 'Nome ou CPF incorretos.' });
         const token = tokenCliente(cliente.id, cliente.cpf);
-        res.json({
-            success: true,
-            tipo: 'cliente',
-            token,
-            usuario: {
-                id: cliente.id,
-                nome: cliente.nome,
-                cpf: cliente.cpf,
-                telefone: cliente.telefone
-            }
-        });
+        res.json({ success: true, tipo: 'cliente', token, usuario: { id: cliente.id, nome: cliente.nome, cpf: cliente.cpf, telefone: cliente.telefone } });
     });
 });
 
 app.get('/verificar-auth', (req, res) => {
     const token = extrairToken(req);
     if (!token) return res.json({ autenticado: false });
-    if (token === ADMIN_TOKEN) {
-        return res.json({ autenticado: true, tipo: 'admin', usuario: { nome: ADMIN_USUARIO } });
-    }
+    if (token === ADMIN_TOKEN) return res.json({ autenticado: true, tipo: 'admin', usuario: { nome: ADMIN_USUARIO } });
     db.all('SELECT id, nome, cpf, telefone FROM clientes', [], (err, clientes) => {
         if (err) return res.json({ autenticado: false });
         const cliente = (clientes || []).find(c => tokenCliente(c.id, c.cpf) === token);
         if (!cliente) return res.json({ autenticado: false });
-        res.json({
-            autenticado: true,
-            tipo: 'cliente',
-            usuario: { id: cliente.id, nome: cliente.nome, cpf: cliente.cpf, telefone: cliente.telefone }
-        });
+        res.json({ autenticado: true, tipo: 'cliente', usuario: { id: cliente.id, nome: cliente.nome, cpf: cliente.cpf, telefone: cliente.telefone } });
     });
 });
 
-/* ========== CLIENTES (admin) ========== */
-
 app.post('/salvar-cliente', exigirAdmin, (req, res) => {
     const { nome, cpf, telefone } = req.body;
-    if (!nome || !cpf) {
-        return res.status(400).json({ error: 'Preencha nome e CPF.' });
-    }
+    if (!nome || !cpf) return res.status(400).json({ error: 'Preencha nome e CPF.' });
     const cpfT = String(cpf).trim().replace(/\D/g, '') || String(cpf).trim();
-    db.run(
-        `INSERT INTO clientes (nome, cpf, telefone) VALUES (?, ?, ?)`,
-        [nome.trim(), cpfT, (telefone || '').trim()],
-        function (err) {
-            if (err) {
-                if (String(err.message).includes('UNIQUE')) {
-                    return res.status(400).json({ error: 'CPF já cadastrado.' });
-                }
-                return res.status(500).json({ error: err.message });
-            }
-            if (req.headers.accept && req.headers.accept.includes('application/json')) {
-                return res.json({ success: true, id: this.lastID });
-            }
-            res.redirect('/clientes.html');
+    db.run(`INSERT INTO clientes (nome, cpf, telefone) VALUES (?, ?, ?)`, [nome.trim(), cpfT, (telefone || '').trim()], function (err) {
+        if (err) {
+            if (String(err.message).includes('UNIQUE')) return res.status(400).json({ error: 'CPF já cadastrado.' });
+            return res.status(500).json({ error: err.message });
         }
-    );
+        if (req.headers.accept && req.headers.accept.includes('application/json')) return res.json({ success: true, id: this.lastID });
+        res.redirect('/clientes.html');
+    });
 });
 
 app.get('/listar-clientes', exigirAdmin, (req, res) => {
@@ -219,29 +159,18 @@ app.get('/listar-clientes', exigirAdmin, (req, res) => {
     });
 });
 
-/* ========== SERVIÇOS ========== */
-
 app.post('/salvar-servico', exigirAdmin, (req, res) => {
     const { descricao, preco, tempo_estimado } = req.body;
-    if (!descricao || preco === undefined || tempo_estimado === undefined) {
-        return res.status(400).send('Preencha todos os campos.');
-    }
+    if (!descricao || preco === undefined || tempo_estimado === undefined) return res.status(400).send('Preencha todos os campos.');
     const precoNum = parseFloat(preco);
     const tempoNum = parseInt(tempo_estimado, 10);
-    if (isNaN(precoNum) || precoNum < 0 || isNaN(tempoNum) || tempoNum < 0) {
-        return res.status(400).send('Preço ou informação de quando foi feito inválidos.');
-    }
-    db.run(
-        `INSERT INTO servicos (descricao, preco, tempo_estimado) VALUES (?, ?, ?)`,
-        [descricao.trim(), precoNum, tempoNum],
-        (err) => {
-            if (err) return res.status(500).send('Erro: ' + err.message);
-            res.redirect('/servicos.html');
-        }
-    );
+    if (isNaN(precoNum) || precoNum < 0 || isNaN(tempoNum) || tempoNum < 0) return res.status(400).send('Preço ou informação de quando foi feito inválidos.');
+    db.run(`INSERT INTO servicos (descricao, preco, tempo_estimado) VALUES (?, ?, ?)`, [descricao.trim(), precoNum, tempoNum], (err) => {
+        if (err) return res.status(500).send('Erro: ' + err.message);
+        res.redirect('/servicos.html');
+    });
 });
 
-// Lista de serviços: logado (cliente ou admin)
 app.get('/listar-servicos', exigirLogado, (req, res) => {
     db.all(`SELECT * FROM servicos ORDER BY descricao ASC`, [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -249,80 +178,43 @@ app.get('/listar-servicos', exigirLogado, (req, res) => {
     });
 });
 
-/* ========== AGENDAMENTOS ========== */
-
 app.post('/finalizar-agendamento', exigirLogado, (req, res) => {
     let { cliente_id, data, responsavel, total, tempo_total, servicos } = req.body;
-
-    // Cliente só pode agendar para si
     if (req.user.tipo === 'cliente') {
         cliente_id = req.user.id;
         responsavel = responsavel || req.user.nome;
     }
-
-    if (!cliente_id || !data || !responsavel || !Array.isArray(servicos) || servicos.length === 0) {
-        return res.status(400).json({ success: false, error: 'Dados incompletos.' });
-    }
-
+    if (!cliente_id || !data || !responsavel || !Array.isArray(servicos) || servicos.length === 0) return res.status(400).json({ success: false, error: 'Dados incompletos.' });
     const totalNum = parseFloat(total);
     const tempoNum = parseInt(tempo_total, 10);
-    if (isNaN(totalNum) || isNaN(tempoNum)) {
-        return res.status(400).json({ success: false, error: 'Total ou tempo inválidos.' });
-    }
-
-    db.run(
-        `INSERT INTO agendamentos (cliente_id, data, responsavel, total, tempo_total) VALUES (?, ?, ?, ?, ?)`,
-        [cliente_id, data, String(responsavel).trim(), totalNum, tempoNum],
-        function (err) {
-            if (err) return res.status(500).json({ success: false, error: err.message });
-            const agendamentoId = this.lastID;
-            const stmt = db.prepare(
-                `INSERT INTO itens_agendamento (agendamento_id, servico_id, preco_cobrado) VALUES (?, ?, ?)`
-            );
-            let erroDetalhe = null;
-            servicos.forEach((item) => {
-                if (erroDetalhe) return;
-                stmt.run(agendamentoId, item.id, item.preco, (errRun) => {
-                    if (errRun) erroDetalhe = errRun;
-                });
-            });
-            stmt.finalize((errFinalize) => {
-                if (erroDetalhe || errFinalize) {
-                    return res.status(500).json({
-                        success: false,
-                        error: (erroDetalhe || errFinalize).message
-                    });
-                }
-                res.json({ success: true, id: agendamentoId });
-            });
-        }
-    );
+    if (isNaN(totalNum) || isNaN(tempoNum)) return res.status(400).json({ success: false, error: 'Total ou tempo inválidos.' });
+    db.run(`INSERT INTO agendamentos (cliente_id, data, responsavel, total, tempo_total) VALUES (?, ?, ?, ?, ?)`, [cliente_id, data, String(responsavel).trim(), totalNum, tempoNum], function (err) {
+        if (err) return res.status(500).json({ success: false, error: err.message });
+        const agendamentoId = this.lastID;
+        const stmt = db.prepare(`INSERT INTO itens_agendamento (agendamento_id, servico_id, preco_cobrado) VALUES (?, ?, ?)`);
+        let erroDetalhe = null;
+        servicos.forEach((item) => {
+            if (erroDetalhe) return;
+            stmt.run(agendamentoId, item.id, item.preco, (errRun) => { if (errRun) erroDetalhe = errRun; });
+        });
+        stmt.finalize((errFinalize) => {
+            if (erroDetalhe || errFinalize) return res.status(500).json({ success: false, error: (erroDetalhe || errFinalize).message });
+            res.json({ success: true, id: agendamentoId });
+        });
+    });
 });
 
-// Admin: todos os pedidos
 app.get('/listar-agendamentos', exigirAdmin, (req, res) => {
-    const sql = `
-        SELECT a.id, a.data, a.responsavel, a.total, a.tempo_total, c.nome as nome_cliente
-        FROM agendamentos a
-        INNER JOIN clientes c ON a.cliente_id = c.id
-        ORDER BY a.id DESC`;
+    const sql = `SELECT a.id, a.data, a.responsavel, a.total, a.tempo_total, c.nome as nome_cliente FROM agendamentos a INNER JOIN clientes c ON a.cliente_id = c.id ORDER BY a.id DESC`;
     db.all(sql, [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(rows);
     });
 });
 
-// Cliente: só os próprios
 app.get('/meus-agendamentos', exigirLogado, (req, res) => {
-    if (req.user.tipo !== 'cliente') {
-        return res.status(403).json({ error: 'Rota apenas para clientes.' });
-    }
-    const sql = `
-        SELECT a.id, a.data, a.responsavel, a.total, a.tempo_total, c.nome as nome_cliente
-        FROM agendamentos a
-        INNER JOIN clientes c ON a.cliente_id = c.id
-        WHERE a.cliente_id = ?
-        ORDER BY a.id DESC`;
+    if (req.user.tipo !== 'cliente') return res.status(403).json({ error: 'Rota apenas para clientes.' });
+    const sql = `SELECT a.id, a.data, a.responsavel, a.total, a.tempo_total, c.nome as nome_cliente FROM agendamentos a INNER JOIN clientes c ON a.cliente_id = c.id WHERE a.cliente_id = ? ORDER BY a.id DESC`;
     db.all(sql, [req.user.id], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(rows);
@@ -331,28 +223,62 @@ app.get('/meus-agendamentos', exigirLogado, (req, res) => {
 
 app.get('/detalhes-agendamento/:id', exigirLogado, (req, res) => {
     const { id } = req.params;
-    const sqlItens = `
-        SELECT i.preco_cobrado, s.descricao, s.tempo_estimado
-        FROM itens_agendamento i
-        INNER JOIN servicos s ON i.servico_id = s.id
-        WHERE i.agendamento_id = ?`;
-
+    const sqlItens = `SELECT i.preco_cobrado, s.descricao, s.tempo_estimado, s.id as servico_id FROM itens_agendamento i INNER JOIN servicos s ON i.servico_id = s.id WHERE i.agendamento_id = ?`;
     if (req.user.tipo === 'admin') {
         return db.all(sqlItens, [id], (err, rows) => {
             if (err) return res.status(500).json({ error: err.message });
             res.json(rows);
         });
     }
-
-    // Cliente: só se o pedido for dele
     db.get(`SELECT cliente_id FROM agendamentos WHERE id = ?`, [id], (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
-        if (!row || row.cliente_id !== req.user.id) {
-            return res.status(403).json({ error: 'Pedido não encontrado.' });
-        }
+        if (!row || row.cliente_id !== req.user.id) return res.status(403).json({ error: 'Pedido não encontrado.' });
         db.all(sqlItens, [id], (err2, rows) => {
             if (err2) return res.status(500).json({ error: err2.message });
             res.json(rows);
+        });
+    });
+});
+
+app.get('/agendamento-completo/:id', exigirLogado, (req, res) => {
+    const { id } = req.params;
+    db.get(`SELECT a.id, a.cliente_id, a.data, a.responsavel, a.total, a.tempo_total, c.nome as nome_cliente FROM agendamentos a INNER JOIN clientes c ON a.cliente_id = c.id WHERE a.id = ?`, [id], (err, pedido) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!pedido) return res.status(404).json({ error: 'Pedido não encontrado.' });
+        if (req.user.tipo === 'cliente' && pedido.cliente_id !== req.user.id) return res.status(403).json({ error: 'Você só pode editar seus próprios pedidos.' });
+        db.all(`SELECT i.servico_id as id, i.preco_cobrado as preco, s.descricao, s.tempo_estimado FROM itens_agendamento i INNER JOIN servicos s ON i.servico_id = s.id WHERE i.agendamento_id = ?`, [id], (err2, itens) => {
+            if (err2) return res.status(500).json({ error: err2.message });
+            res.json({ ...pedido, itens: itens || [] });
+        });
+    });
+});
+
+app.put('/editar-agendamento/:id', exigirLogado, (req, res) => {
+    const { id } = req.params;
+    let { data, responsavel, total, tempo_total, servicos } = req.body || {};
+    if (!data || !responsavel || !Array.isArray(servicos) || servicos.length === 0) return res.status(400).json({ success: false, error: 'Dados incompletos.' });
+    const totalNum = parseFloat(total);
+    const tempoNum = parseInt(tempo_total, 10);
+    if (isNaN(totalNum) || isNaN(tempoNum)) return res.status(400).json({ success: false, error: 'Total ou tempo inválidos.' });
+    db.get(`SELECT id, cliente_id FROM agendamentos WHERE id = ?`, [id], (err, pedido) => {
+        if (err) return res.status(500).json({ success: false, error: err.message });
+        if (!pedido) return res.status(404).json({ success: false, error: 'Pedido não encontrado.' });
+        if (req.user.tipo === 'cliente' && pedido.cliente_id !== req.user.id) return res.status(403).json({ success: false, error: 'Você só pode editar seus próprios pedidos.' });
+        db.run(`UPDATE agendamentos SET data = ?, responsavel = ?, total = ?, tempo_total = ? WHERE id = ?`, [data, String(responsavel).trim(), totalNum, tempoNum, id], function (errUp) {
+            if (errUp) return res.status(500).json({ success: false, error: errUp.message });
+            db.run(`DELETE FROM itens_agendamento WHERE agendamento_id = ?`, [id], (errDel) => {
+                if (errDel) return res.status(500).json({ success: false, error: errDel.message });
+                const stmt = db.prepare(`INSERT INTO itens_agendamento (agendamento_id, servico_id, preco_cobrado) VALUES (?, ?, ?)`);
+                let erroDetalhe = null;
+                servicos.forEach((item) => {
+                    if (erroDetalhe) return;
+                    stmt.run(id, item.id, item.preco, (errRun) => { if (errRun) erroDetalhe = errRun; });
+                });
+                stmt.finalize((errFinalize) => {
+                    if (erroDetalhe || errFinalize) return res.status(500).json({ success: false, error: (erroDetalhe || errFinalize).message });
+                    res.json({ success: true, id: Number(id) });
+                });
+            });
         });
     });
 });
