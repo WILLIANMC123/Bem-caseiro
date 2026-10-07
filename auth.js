@@ -88,6 +88,7 @@ function bcRenderChrome(activePage) {
             <a href="servicos.html" class="${activePage === 'servicos' ? 'ativo' : ''}">Produtos</a>
             <a href="agendamentos.html" class="${activePage === 'agendamentos' ? 'ativo' : ''}">Novo Pedido</a>
             <a href="meus_pedidos.html" class="${activePage === 'meus' ? 'ativo' : ''}">Meus Pedidos</a>
+            <a href="contatos.html" class="${activePage === 'contatos' ? 'ativo' : ''}">Contatos</a>
         `;
     }
 

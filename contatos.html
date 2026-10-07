@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="estilo.css">
+    <title>Bem Caseiro - Contatos</title>
+    <style>
+        .contato-box {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+        .contato-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            padding: 16px 18px;
+            background: #F8F4EB;
+            border-radius: 14px;
+            border-left: 5px solid var(--rosa-bebe);
+        }
+        .contato-item .icone {
+            font-size: 1.6rem;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+        .contato-item .texto strong {
+            display: block;
+            color: var(--azul-escuro);
+            margin-bottom: 4px;
+        }
+        .contato-item .texto span,
+        .contato-item .texto a {
+            color: var(--texto);
+            text-decoration: none;
+            font-size: 1.05rem;
+        }
+        .contato-item .texto a:hover {
+            color: var(--azul-escuro);
+            text-decoration: underline;
+        }
+        .mapa-placeholder {
+            margin-top: 8px;
+            padding: 20px;
+            text-align: center;
+            background: #fff;
+            border: 2px dashed var(--bege-escuro);
+            border-radius: 14px;
+            color: var(--texto-claro);
+            font-size: 0.95rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="bc-nav"></nav>
+    <header class="banner">
+        <img src="logo-bem-caseiro.png" alt="Bem Caseiro" style="height: 80px; width: auto; margin-bottom: 15px;">
+        <h1>Contatos</h1>
+        <p>Fale conosco e saiba onde estamos</p>
+    </header>
+    <div class="container">
+        <div class="card">
+            <h2>Bem Caseiro — Pães e Delícias</h2>
+            <div class="contato-box">
+                <div class="contato-item">
+                    <span class="icone">📍</span>
+                    <div class="texto">
+                        <strong>Endereço</strong>
+                        <span>Rua das Flores, 123 — Centro<br>São Cristóvão / SE — CEP 49000-000</span>
+                    </div>
+                </div>
+                <div class="contato-item">
+                    <span class="icone">📞</span>
+                    <div class="texto">
+                        <strong>Telefone / WhatsApp</strong>
+                        <a href="https://wa.me/5579999999999" target="_blank" rel="noopener">(79) 99999-9999</a>
+                    </div>
+                </div>
+                <div class="contato-item">
+                    <span class="icone">🕒</span>
+                    <div class="texto">
+                        <strong>Horário de funcionamento</strong>
+                        <span>Segunda a Sábado: 6h às 18h<br>Domingo: 6h às 12h</span>
+                    </div>
+                </div>
+                <div class="contato-item">
+                    <span class="icone">✉️</span>
+                    <div class="texto">
+                        <strong>Observação</strong>
+                        <span>Pedidos e reservas também podem ser feitos pelo sistema. Em caso de dúvida, chame no WhatsApp!</span>
+                    </div>
+                </div>
+            </div>
+            <div class="mapa-placeholder">
+                🗺️ Substitua este bloco por um mapa do Google Maps, se quiser.
+            </div>
+        </div>
+    </div>
+    <footer class="rodape"><p>&copy; 2026 Bem Caseiro - Pães e Delícias</p></footer>
+    <script src="auth.js"></script>
+    <script>
+        const s = bcRequireLogin();
+        if (!s) throw new Error('redirect');
+        // Página pensada para clientes; admin também pode ver
+        bcRenderChrome('contatos');
+    </script>
+</body>
+</html>
