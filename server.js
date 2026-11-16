@@ -89,10 +89,10 @@ function exigirLogado(req, res, next) {
 
 app.post('/cadastrar', (req, res) => {
     const { nome, cpf, telefone } = req.body || {};
-    if (!nome || !cpf) return res.status(400).json({ success: false, error: 'Informe nome e CPF.' });
+    if (!nome || !cpf || !telefone || !String(telefone).trim()) return res.status(400).json({ success: false, error: 'Informe nome, CPF e telefone.' });
     const nomeT = String(nome).trim();
     const cpfT = String(cpf).trim().replace(/\D/g, '') || String(cpf).trim();
-    const telT = telefone ? String(telefone).trim() : '';
+    const telT = String(telefone).trim();
     if (nomeT.toLowerCase() === ADMIN_USUARIO.toLowerCase()) return res.status(400).json({ success: false, error: 'Este nome de usuário é reservado.' });
     db.run(`INSERT INTO clientes (nome, cpf, telefone) VALUES (?, ?, ?)`, [nomeT, cpfT, telT], function (err) {
         if (err) {
@@ -140,9 +140,9 @@ app.get('/verificar-auth', (req, res) => {
 
 app.post('/salvar-cliente', exigirAdmin, (req, res) => {
     const { nome, cpf, telefone } = req.body;
-    if (!nome || !cpf) return res.status(400).json({ error: 'Preencha nome e CPF.' });
+    if (!nome || !cpf || !telefone || !String(telefone).trim()) return res.status(400).json({ error: 'Preencha nome, CPF e telefone.' });
     const cpfT = String(cpf).trim().replace(/\D/g, '') || String(cpf).trim();
-    db.run(`INSERT INTO clientes (nome, cpf, telefone) VALUES (?, ?, ?)`, [nome.trim(), cpfT, (telefone || '').trim()], function (err) {
+    db.run(`INSERT INTO clientes (nome, cpf, telefone) VALUES (?, ?, ?)`, [nome.trim(), cpfT, String(telefone).trim()], function (err) {
         if (err) {
             if (String(err.message).includes('UNIQUE')) return res.status(400).json({ error: 'CPF já cadastrado.' });
             return res.status(500).json({ error: err.message });
